@@ -1284,7 +1284,27 @@
     </div>
   </main>
 
-  <div id="toast" class="toast" aria-live="assertive"></div>
+  
+  <div id="import-modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+      <div class="modal-header">
+        <div>
+          <div id="import-modal-title" class="modal-title">Import</div>
+          <div class="modal-subtitle">JSON またはテキストをコピペして取り込めます。</div>
+        </div>
+        <button id="btn-import-close" class="modal-close" type="button" aria-label="閉じる">✕</button>
+      </div>
+      <textarea id="import-textarea" class="modal-textarea" placeholder="ここに JSON / テキストを貼り付けてください"></textarea>
+      <div class="modal-actions">
+        <button id="btn-import-replace-json" class="toolbar-btn" type="button">JSONで置換</button>
+        <button id="btn-import-append-json" class="toolbar-btn" type="button">JSONを追加</button>
+        <button id="btn-import-current-text" class="toolbar-btn" type="button">TEXTを現在タブへ</button>
+        <button id="btn-import-new-text" class="toolbar-btn primary" type="button">TEXTを新規タブへ</button>
+      </div>
+    </div>
+  </div>
+
+<div id="toast" class="toast" aria-live="assertive"></div>
 
   <script>
   (async () => {
@@ -2900,13 +2920,13 @@
       });
       el.btnCopy.addEventListener("click", copyCurrentTab);
       el.btnCopyJsonAll.addEventListener("click", copyAllTabsJson);
-      el.btnImport.addEventListener("click", openImportModal);
-      el.btnImportClose.addEventListener("click", closeImportModal);
-      el.importModal.addEventListener("click", (event) => {
+      el.btnImport?.addEventListener("click", openImportModal);
+      el.btnImportClose?.addEventListener("click", closeImportModal);
+      el.importModal?.addEventListener("click", (event) => {
         if (event.target === el.importModal) closeImportModal();
       });
-      el.btnImportReplaceJson.addEventListener("click", () => {
-        const raw = el.importTextarea.value;
+      el.btnImportReplaceJson?.addEventListener("click", () => {
+        const raw = el.importTextarea?.value || "";
         try {
           const payload = parseImportPayload(raw);
           if (!confirm("現在の内容を置き換えますか？")) return;
@@ -2915,8 +2935,8 @@
           showToast(error.message === "empty" ? "貼り付け内容が空やで" : "JSONとして読めへんかったで");
         }
       });
-      el.btnImportAppendJson.addEventListener("click", () => {
-        const raw = el.importTextarea.value;
+      el.btnImportAppendJson?.addEventListener("click", () => {
+        const raw = el.importTextarea?.value || "";
         try {
           const payload = parseImportPayload(raw);
           appendTabsFromImportedJson(payload);
@@ -2924,16 +2944,16 @@
           showToast(error.message === "empty" ? "貼り付け内容が空やで" : "JSONとして読めへんかったで");
         }
       });
-      el.btnImportCurrentText.addEventListener("click", () => {
-        const raw = el.importTextarea.value;
+      el.btnImportCurrentText?.addEventListener("click", () => {
+        const raw = el.importTextarea?.value || "";
         if (!safeText(raw).trim()) {
           showToast("貼り付け内容が空やで");
           return;
         }
         importTextIntoCurrentTab(raw);
       });
-      el.btnImportNewText.addEventListener("click", () => {
-        const raw = el.importTextarea.value;
+      el.btnImportNewText?.addEventListener("click", () => {
+        const raw = el.importTextarea?.value || "";
         if (!safeText(raw).trim()) {
           showToast("貼り付け内容が空やで");
           return;
@@ -2964,7 +2984,7 @@
       el.editor.addEventListener("keydown", handleTextEditorKeydown);
 
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !el.importModal.classList.contains("hidden")) {
+        if (event.key === "Escape" && el.importModal && !el.importModal.classList.contains("hidden")) {
           closeImportModal();
         }
       });
