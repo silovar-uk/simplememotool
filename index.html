@@ -617,6 +617,98 @@
       box-shadow: inset 0 -1px 0 rgba(0,0,0,0.04);
     }
 
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.18);
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+    }
+
+    .modal-backdrop.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      width: min(760px, 100%);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.78);
+      background: color-mix(in srgb, var(--surface-strong) 96%, transparent);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.92);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .modal-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(255,255,255,0.86);
+      color: var(--muted);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.98);
+    }
+
+    .modal-textarea {
+      width: 100%;
+      min-height: 280px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      border-radius: 18px;
+      background: rgba(249,250,251,0.96);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+      padding: 16px 18px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .modal-textarea:focus {
+      box-shadow: 0 0 0 4px rgba(0,122,255,0.14), inset 0 0 0 1px rgba(0,122,255,0.18);
+      background: rgba(255,255,255,0.98);
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .toast {
       position: fixed;
       right: 16px;
@@ -1149,6 +1241,7 @@
       <button id="btn-toggle-completed" class="toolbar-btn" title="完了した項目を表示 / 非表示">✓ <span class="label">完了表示</span></button>
       <button id="btn-copy" class="toolbar-btn" title="現在のタブをクリップボードにコピー">📋 <span class="label">Copy</span></button>
       <button id="btn-copy-json-all" class="toolbar-btn" title="全タブの全情報をJSONテキストでクリップボードにコピー">🧾 <span class="label">JSON</span></button>
+      <button id="btn-import" class="toolbar-btn" title="JSONやテキストをコピペで取り込む">⤓ <span class="label">Import</span></button>
       <button id="btn-download-txt" class="toolbar-btn" title="現在のタブをTXTで保存">TXT</button>
       <button id="btn-download-md" class="toolbar-btn primary" title="現在のタブをMarkdownで保存">MD</button>
     </div>
@@ -1338,11 +1431,19 @@
       btnToggleCompleted: $("#btn-toggle-completed"),
       btnCopy: $("#btn-copy"),
       btnCopyJsonAll: $("#btn-copy-json-all"),
+      btnImport: $("#btn-import"),
       btnDownloadTxt: $("#btn-download-txt"),
       btnDownloadMd: $("#btn-download-md"),
       btnRenameTab: $("#btn-rename-tab"),
       btnDuplicateTab: $("#btn-duplicate-tab"),
       btnDeleteTab: $("#btn-delete-tab"),
+      importModal: $("#import-modal"),
+      importTextarea: $("#import-textarea"),
+      btnImportClose: $("#btn-import-close"),
+      btnImportReplaceJson: $("#btn-import-replace-json"),
+      btnImportAppendJson: $("#btn-import-append-json"),
+      btnImportCurrentText: $("#btn-import-current-text"),
+      btnImportNewText: $("#btn-import-new-text"),
       toast: $("#toast")
     };
 
@@ -1426,6 +1527,7 @@
         state.activeTabId = loaded.activeTabId && loaded.tabs.some((tab) => tab.id === loaded.activeTabId)
           ? loaded.activeTabId
           : loaded.tabs[0].id;
+        runtime.showCompleted = !!(loaded.ui && loaded.ui.showCompleted);
       }
       if (!Array.isArray(state.tabs) || !state.tabs.length) {
         const firstTab = createTab("outliner");
@@ -1599,6 +1701,9 @@
         exportFormat: "memo-tool-all-tabs-json",
         exportedAt: new Date().toISOString(),
         activeTabId: state.activeTabId,
+        ui: {
+          showCompleted: !!runtime.showCompleted
+        },
         tabs: deepClone(state.tabs)
       };
       return JSON.stringify(payload, null, 2);
@@ -1607,6 +1712,158 @@
     const copyAllTabsJson = async () => {
       const text = exportAllTabsJsonText();
       await writeClipboardText(text, "全タブのJSONをコピーしたで");
+    };
+
+    const normalizeImportedTabs = (tabs, options = {}) => {
+      const existingTabIds = new Set(state.tabs.map((tab) => tab.id));
+      const forceNewIds = options.forceNewIds !== false;
+      return (Array.isArray(tabs) ? tabs : []).map((tab, index) => {
+        const normalized = Storage.sanitizeTab(tab, index);
+        const tabId = forceNewIds || existingTabIds.has(normalized.id) ? uid() : normalized.id;
+        return {
+          ...normalized,
+          id: tabId,
+          items: normalized.items.map((item) => ({ ...Storage.sanitizeItem(item), id: uid() })),
+          createdAt: Number.isFinite(normalized.createdAt) ? normalized.createdAt : now()
+        };
+      });
+    };
+
+    const parseImportPayload = (raw) => {
+      const text = safeText(raw).trim();
+      if (!text) throw new Error("empty");
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return { tabs: normalizeImportedTabs(parsed), activeTabId: null, ui: null };
+      }
+      if (!parsed || !Array.isArray(parsed.tabs)) {
+        throw new Error("invalid-json");
+      }
+      const tabs = normalizeImportedTabs(parsed.tabs, { forceNewIds: false });
+      const importedActiveId = parsed.activeTabId;
+      const activeTabId = tabs.find((tab) => tab.id === importedActiveId)?.id || tabs[0]?.id || null;
+      const ui = parsed.ui && typeof parsed.ui === "object" ? { showCompleted: !!parsed.ui.showCompleted } : null;
+      return { tabs, activeTabId, ui };
+    };
+
+    const parseTextToOutlinerItems = (raw) => {
+      const text = safeText(raw).replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ");
+      const lines = text.split("\n");
+      const items = [];
+      lines.forEach((line) => {
+        if (!line.trim()) return;
+        const expanded = line.replace(/	/g, "  ");
+        const indentMatch = expanded.match(/^\s*/);
+        const indent = indentMatch ? indentMatch[0].length : 0;
+        const depth = Math.max(0, Math.floor(indent / 2));
+        let body = expanded.trimStart();
+        let completed = false;
+        if (/^([-*•]|\d+[.)])\s*\[x\]\s+/i.test(body)) {
+          completed = true;
+          body = body.replace(/^([-*•]|\d+[.)])\s*\[x\]\s+/i, "");
+        } else if (/^\[x\]\s+/i.test(body)) {
+          completed = true;
+          body = body.replace(/^\[x\]\s+/i, "");
+        } else if (/^✓\s+/.test(body)) {
+          completed = true;
+          body = body.replace(/^✓\s+/, "");
+        } else {
+          body = body.replace(/^([-*•]|\d+[.)])\s+/, "");
+        }
+        items.push({
+          id: uid(),
+          text: body,
+          note: "",
+          depth,
+          completed,
+          collapsed: false,
+          updatedAt: now()
+        });
+      });
+      return items.length ? items : [createEmptyItem()];
+    };
+
+    const openImportModal = () => {
+      el.importModal.classList.remove("hidden");
+      el.importModal.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => {
+        el.importTextarea.focus();
+        el.importTextarea.select();
+      });
+    };
+
+    const closeImportModal = () => {
+      el.importModal.classList.add("hidden");
+      el.importModal.setAttribute("aria-hidden", "true");
+    };
+
+    const replaceStateFromImportedJson = (payload) => {
+      if (!payload.tabs.length) {
+        showToast("取り込めるタブがなかったで");
+        return;
+      }
+      state.tabs = payload.tabs;
+      state.activeTabId = payload.activeTabId || payload.tabs[0].id;
+      if (payload.ui) runtime.showCompleted = !!payload.ui.showCompleted;
+      runtime.renamingTabId = null;
+      runtime.focused = { type: "tab", tabId: state.activeTabId };
+      runtime.openNotes.clear();
+      runtime.editSessions.clear();
+      History.reset();
+      render(runtime.focused);
+      scheduleSave();
+      closeImportModal();
+      showToast("JSONで全体を置き換えたで");
+    };
+
+    const appendTabsFromImportedJson = (payload) => {
+      if (!payload.tabs.length) {
+        showToast("追加できるタブがなかったで");
+        return;
+      }
+      const appended = normalizeImportedTabs(payload.tabs, { forceNewIds: true });
+      state.tabs.push(...appended);
+      state.activeTabId = appended[0].id;
+      runtime.focused = { type: "tab", tabId: state.activeTabId };
+      runtime.renamingTabId = null;
+      History.reset();
+      render(runtime.focused);
+      scheduleSave();
+      closeImportModal();
+      showToast(`${appended.length}個のタブを追加したで`);
+    };
+
+    const importTextIntoCurrentTab = (raw) => {
+      const tab = getActiveTab();
+      if (!tab) return;
+      if (tab.mode === "text") {
+        tab.content = safeText(raw).replace(/\r\n?/g, "\n");
+        runtime.focused = { type: "text", cursor: 0 };
+      } else {
+        tab.items = parseTextToOutlinerItems(raw);
+        runtime.focused = { type: "item", itemId: tab.items[0].id, cursor: 0 };
+      }
+      runtime.openNotes.clear();
+      runtime.editSessions.clear();
+      History.reset();
+      render(runtime.focused);
+      scheduleSave();
+      closeImportModal();
+      showToast("現在のタブへ取り込んだで");
+    };
+
+    const importTextAsNewTab = (raw) => {
+      const tab = createTab("text");
+      tab.content = safeText(raw).replace(/\r\n?/g, "\n");
+      state.tabs.push(tab);
+      state.activeTabId = tab.id;
+      runtime.focused = { type: "text", cursor: 0 };
+      runtime.renamingTabId = null;
+      History.reset();
+      render(runtime.focused);
+      scheduleSave();
+      closeImportModal();
+      showToast("テキストを新規タブに取り込んだで");
     };
 
     const setWorkspaceMeta = () => {
@@ -2643,6 +2900,46 @@
       });
       el.btnCopy.addEventListener("click", copyCurrentTab);
       el.btnCopyJsonAll.addEventListener("click", copyAllTabsJson);
+      el.btnImport.addEventListener("click", openImportModal);
+      el.btnImportClose.addEventListener("click", closeImportModal);
+      el.importModal.addEventListener("click", (event) => {
+        if (event.target === el.importModal) closeImportModal();
+      });
+      el.btnImportReplaceJson.addEventListener("click", () => {
+        const raw = el.importTextarea.value;
+        try {
+          const payload = parseImportPayload(raw);
+          if (!confirm("現在の内容を置き換えますか？")) return;
+          replaceStateFromImportedJson(payload);
+        } catch (error) {
+          showToast(error.message === "empty" ? "貼り付け内容が空やで" : "JSONとして読めへんかったで");
+        }
+      });
+      el.btnImportAppendJson.addEventListener("click", () => {
+        const raw = el.importTextarea.value;
+        try {
+          const payload = parseImportPayload(raw);
+          appendTabsFromImportedJson(payload);
+        } catch (error) {
+          showToast(error.message === "empty" ? "貼り付け内容が空やで" : "JSONとして読めへんかったで");
+        }
+      });
+      el.btnImportCurrentText.addEventListener("click", () => {
+        const raw = el.importTextarea.value;
+        if (!safeText(raw).trim()) {
+          showToast("貼り付け内容が空やで");
+          return;
+        }
+        importTextIntoCurrentTab(raw);
+      });
+      el.btnImportNewText.addEventListener("click", () => {
+        const raw = el.importTextarea.value;
+        if (!safeText(raw).trim()) {
+          showToast("貼り付け内容が空やで");
+          return;
+        }
+        importTextAsNewTab(raw);
+      });
       el.btnDownloadTxt.addEventListener("click", () => downloadCurrentTab("txt"));
       el.btnDownloadMd.addEventListener("click", () => downloadCurrentTab("md"));
       el.btnRenameTab.addEventListener("click", renameCurrentTab);
@@ -2665,6 +2962,12 @@
       el.editor.addEventListener("focusout", handleInputBlur);
       el.editor.addEventListener("keydown", handleOutlinerKeydown);
       el.editor.addEventListener("keydown", handleTextEditorKeydown);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !el.importModal.classList.contains("hidden")) {
+          closeImportModal();
+        }
+      });
 
       window.addEventListener("beforeunload", () => Storage.save(state));
     };
