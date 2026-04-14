@@ -1147,6 +1147,7 @@
       <button id="btn-redo" class="toolbar-btn" title="やり直す (Ctrl/Cmd+Shift+Z)">↻</button>
       <button id="btn-reload" class="toolbar-btn" title="保存済みデータを再読み込み">🔄</button>
       <button id="btn-copy" class="toolbar-btn" title="現在のタブをクリップボードにコピー">📋 <span class="label">Copy</span></button>
+      <button id="btn-copy-json-all" class="toolbar-btn" title="全タブの全情報をJSONテキストでクリップボードにコピー">🧾 <span class="label">JSON</span></button>
       <button id="btn-download-txt" class="toolbar-btn" title="現在のタブをTXTで保存">TXT</button>
       <button id="btn-download-md" class="toolbar-btn primary" title="現在のタブをMarkdownで保存">MD</button>
     </div>
@@ -1329,6 +1330,7 @@
       btnRedo: $("#btn-redo"),
       btnReload: $("#btn-reload"),
       btnCopy: $("#btn-copy"),
+      btnCopyJsonAll: $("#btn-copy-json-all"),
       btnDownloadTxt: $("#btn-download-txt"),
       btnDownloadMd: $("#btn-download-md"),
       btnRenameTab: $("#btn-rename-tab"),
@@ -1553,13 +1555,10 @@
       showToast(`${format.toUpperCase()}を書き出したで`);
     };
 
-    const copyCurrentTab = async () => {
-      const tab = getActiveTab();
-      if (!tab) return;
-      const text = exportTabContent(tab, "txt");
+    const writeClipboardText = async (text, successMessage = "クリップボードにコピーしたで") => {
       try {
         await navigator.clipboard.writeText(text);
-        showToast("クリップボードにコピーしたで");
+        showToast(successMessage);
       } catch (error) {
         const fallback = document.createElement("textarea");
         fallback.value = text;
@@ -1570,15 +1569,42 @@
         fallback.select();
         document.execCommand("copy");
         fallback.remove();
-        showToast("クリップボードにコピーしたで");
+        showToast(successMessage);
       }
+    };
+
+    const copyCurrentTab = async () => {
+      const tab = getActiveTab();
+      if (!tab) return;
+      const text = exportTabContent(tab, "txt");
+      await writeClipboardText(text, "現在のタブをコピーしたで");
+    };
+
+    const exportAllTabsJsonText = () => {
+      const payload = {
+        app: "MemoTool",
+        exportFormat: "memo-tool-all-tabs-json",
+        exportedAt: new Date().toISOString(),
+        activeTabId: state.activeTabId,
+        tabs: deepClone(state.tabs)
+      };
+      return JSON.stringify(payload, null, 2);
+    };
+
+    const copyAllTabsJson = async () => {
+      const text = exportAllTabsJsonText();
+      await writeClipboardText(text, "全タブのJSONをコピーしたで");
     };
 
     const setWorkspaceMeta = () => {
       const tab = getActiveTab();
-      if (!tab) return;
+      if (!tab) {
+        document.title = "MemoTool";
+        return;
+      }
       el.modeChip.textContent = tab.mode === "outliner" ? "🔹 OUTLINER" : "📝 TEXT";
       el.workspaceTitle.textContent = tab.title;
+      document.title = `${tab.title} - MemoTool`;
     };
 
     const setActiveTab = (tabId) => {
@@ -2583,6 +2609,7 @@
       el.btnRedo.addEventListener("click", () => History.redo());
       el.btnReload.addEventListener("click", reloadFromStorage);
       el.btnCopy.addEventListener("click", copyCurrentTab);
+      el.btnCopyJsonAll.addEventListener("click", copyAllTabsJson);
       el.btnDownloadTxt.addEventListener("click", () => downloadCurrentTab("txt"));
       el.btnDownloadMd.addEventListener("click", () => downloadCurrentTab("md"));
       el.btnRenameTab.addEventListener("click", renameCurrentTab);
