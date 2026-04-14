@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>MemoTool Standalone</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<style>
+  /* --- ベーススタイル --- */
+  :root {
+    --bg-color: #fafaf9;
+    --text-color: #44403c;
+    --border-color: #e7e5e4;
+    --accent-color: #fb923c;
+    --tab-active-bg: #ffffff;
+    --tab-inactive-bg: #f5f5f4;
+    --hover-bg: #f5f5f4;
+    --selected-bg: #e0f2fe; /* 選択時の背景色 */
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* --- ヘッダー --- */
+  header {
+    background: white;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    z-index: 50;
+  }
+
+  #header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 28px;
+  }
+
+  .header-left, .header-right { display: flex; align-items: center; gap: 4px; }
+
+  button {
+    background: none; border: 1px solid transparent; cursor: pointer;
+    padding: 2px 6px; border-radius: 4px; color: #78716c; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  button:hover { background-color: var(--hover-bg); }
+
+  .mode-switch { display: flex; background: #e0f2fe; border-radius: 4px; padding: 2px; gap: 1px; }
+  .mode-btn { border: none; padding: 2px 6px; font-size: 10px; color: #0369a1; border-radius: 3px; }
+  .mode-btn.active { background: white; font-weight: bold; shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+  .control-btn { border: 1px solid #cbd5e1; background: white; width: 24px; height: 24px; padding: 0; }
+  .mini-btn { border: 1px solid #bfdbfe; background: white; border-radius: 10px; font-size: 9px; padding: 0 6px; color: #0284c7; height: 18px; }
+
+  /* --- タブバー構造 (Layout Fix) --- */
+  #tab-header-area {
+    background: #e7e5e4;
+    padding: 4px 4px 0 4px;
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+    align-items: flex-end; /* 下揃え */
+  }
+
+  /* スクロールボタン */
+  .tab-scroll-btn {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1px solid #d6d3d1;
+    background: white;
+    color: #78716c;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    margin-bottom: 2px; /* タブの下端に合わせる微調整 */
+    flex-shrink: 0;
+  }
+  .tab-scroll-btn:hover { background: #f5f5f4; color: #44403c; border-color: #a8a29e; }
+  .tab-scroll-btn:active { background: #e7e5e4; }
+
+  /* タブのスクロール領域 */
+  #tab-list {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    flex: 1; /* 余った幅を使う */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+    align-items: flex-end;
+    /* ドラッグ用カーソル（通常はgrab） */
+    cursor: default; 
+    /* ドラッグ中のテキスト選択防止 */
+    user-select: none; 
+    padding-bottom: 0px;
+  }
+  #tab-list::-webkit-scrollbar { display: none; }
+  
+  /* 余白のドラッグスクロール中 */
+  #tab-list.grabbing {
+    cursor: grabbing;
+  }
+
+  .tab {
+    background: var(--tab-inactive-bg);
+    padding: 6px 8px 6px 12px;
+    border-radius: 6px 6px 0 0;
+    font-size: 12px;
+    color: #78716c;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    user-select: none;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 140px;
+    height: 18px; /* 高さ固定 */
+    flex-shrink: 0; /* 潰れないように */
+    transition: transform 0.2s, background-color 0.2s;
+  }
+  .tab.active {
+    background: var(--tab-active-bg);
+    color: #44403c;
+    font-weight: bold;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    height: 20px; /* アクティブは少し高く */
+    margin-top: -2px;
+    z-index: 10;
+  }
+  .tab:hover:not(.active) { background: #f0f0ed; }
+
+  /* ドラッグ&ドロップ中のスタイル */
+  .tab.dragging {
+    opacity: 0.5;
+    background: #e2e8f0;
+    border: 1px dashed #94a3b8;
+  }
+  /* ドロップ対象のスタイル */
+  .tab.drag-over {
+    /* 左側に挿入ラインを表示 */
+    border-left: 3px solid #0ea5e9;
+    padding-left: 9px; /* border分調整 */
+  }
+  
+  .tab-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none; /* ドラッグ操作を阻害しないように */
+  }
+  
+  .tab input {
+    background: white; border: 1px solid #0ea5e9; border-radius: 2px;
+    font-size: 12px; padding: 2px; margin: -3px; width: 100%;
+  }
+
+  .close-tab-btn {
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    font-size: 10px; color: #a8a29e;
+    opacity: 0.6;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .close-tab-btn:hover { background-color: #fee2e2; color: #ef4444; opacity: 1; }
+
+  /* 新規タブボタン周辺 */
+  .new-tab-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    padding-bottom: 6px; /* タブのベースラインに合わせる */
+    z-index: 60; /* メニューがタブの上に表示されるように */
+    margin-left: 2px;
+  }
+
+  #new-tab-btn {
+    padding: 2px 8px;
+    font-size: 14px;
+    color: #57534e;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex; align-items: center;
+    height: 18px;
+    border-radius: 4px;
+  }
+  #new-tab-btn:hover { color: #0ea5e9; background: rgba(255,255,255,0.5); }
+
+  /* モード選択メニュー */
+  .mode-menu {
+    position: absolute;
+    top: 24px; right: 0; /* ボタンの直下に右寄せ */
+    background: white;
+    border: 1px solid #e7e5e4;
+    border-radius: 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    display: none; /* JSで制御 */
+    flex-direction: column;
+    z-index: 100;
+    min-width: 130px;
+    padding: 4px;
+  }
+  .mode-menu-item {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex; align-items: center; gap: 8px;
+    color: #44403c;
+  }
+  .mode-menu-item:hover { background-color: #f0f9ff; color: #0284c7; }
+
+  /* --- エディタエリア --- */
+  #editor-container {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #editor {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: 80px;
+  }
+
+  /* テキストモード用エディタ */
+  .text-editor-area {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.6;
+    font-family: inherit;
+    color: inherit;
+    background: transparent;
+  }
+
+  /* --- アウトライナー用スタイル --- */
+  .row {
+    display: flex; align-items: flex-start; position: relative;
+    padding: 2px 0; min-height: 28px;
+    border-radius: 4px;
+    transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  }
+  .row-fade-out {
+    opacity: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden;
+  }
+  
+  /* 複数選択時のスタイル */
+  .row.selected {
+    background-color: var(--selected-bg);
+  }
+  .row.selected .item-input {
+    background-color: var(--selected-bg); /* 入力欄も背景色を合わせる */
+  }
+
+  .guide-line {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 1px;
+    background-color: #e7e5e4; opacity: 0; pointer-events: none;
+  }
+  .row:hover .guide-line { opacity: 1; }
+  
+  /* --- 折り畳みアイコン兼バレット --- */
+  .fold-icon {
+    width: 20px; height: 20px; /* タップしやすいサイズ */
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; 
+    color: #a8a29e; /* 通常（展開中）はグレー */
+    cursor: pointer; user-select: none;
+    margin-top: 4px; /* テキストの行高に合わせて調整 */
+    margin-right: 2px; flex-shrink: 0;
+    transition: color 0.2s, background-color 0.2s;
+    border-radius: 4px;
+  }
+  .fold-icon:hover { color: #57534e; background-color: #f5f5f4; }
+  
+  /* 閉じているとき（青色強調） */
+  .fold-icon.collapsed { color: #3b82f6; }
+  .fold-icon.collapsed:hover { color: #2563eb; background-color: #eff6ff; }
+
+  /* 子がない場合（リーフ） */
+  .fold-icon.leaf { 
+    color: #d6d3d1; 
+    font-size: 14px; /* ドットを見やすく */
+    line-height: 1;
+  }
+  /* リーフでもホバー時に少し濃くしてインタラクティブ感を出す（選択できるため） */
+  .fold-icon.leaf:hover { color: #a8a29e; background-color: #fafaf9; }
+
+  .input-wrapper { flex: 1; min-width: 0; position: relative; }
+
+  .item-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    font-size: 14px; line-height: 1.6; color: inherit; font-family: inherit;
+    resize: none; padding: 0; margin: 0; min-height: 24px;
+    overflow: hidden; display: block; height: auto;
+    border-radius: 2px;
+  }
+  .item-input::placeholder { color: #d6d3d1; }
+
+  /* 詳細(Note)用のスタイル */
+  .item-note {
+    width: 100%; background: transparent; border: none; outline: none;
+    font-size: 12px; line-height: 1.4; color: #78716c; font-family: inherit;
+    resize: none; padding: 0; margin-top: 2px; display: block; height: auto;
+    overflow: hidden;
+  }
+  .item-note.hidden { display: none; }
+  
+  /* リンクボタンコンテナ */
+  .note-link-container {
+    display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px;
+    padding-left: 2px;
+  }
+  /* リンクボタン */
+  .note-link-btn {
+    display: flex; align-items: center; gap: 2px;
+    font-size: 10px; color: #0284c7; background: #e0f2fe;
+    padding: 2px 6px; border-radius: 10px; text-decoration: none;
+    cursor: pointer; border: 1px solid #bae6fd;
+    user-select: none;
+  }
+  .note-link-btn:hover {
+    background: #bae6fd;
+  }
+
+  /* 装飾 */
+  .text-red { color: #ef4444; }
+  .text-blue { color: #3b82f6; }
+  .text-green { color: #22c55e; }
+  .text-bold-red { color: #ef4444; font-weight: bold; }
+
+  .bg-yellow { background-color: #fef08a; }
+  .bg-pink { background-color: #fbcfe8; }
+  .bg-blue { background-color: #bae6fd; }
+
+  /* --- 行アクション (折り畳みメニュー対応) --- */
+  .row-actions {
+    position: absolute; right: 0; top: 0;
+    display: flex; gap: 2px;
+    background: rgba(255,255,255,0.95);
+    padding: 2px; border-radius: 4px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.1s; z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .row:hover .row-actions { opacity: 1; pointer-events: auto; }
+
+  .action-buttons {
+    display: none; /* デフォルトは隠す */
+    gap: 2px;
+  }
+
+  /* ピン留め状態のときは常に展開 */
+  body.action-menu-pinned .action-buttons { display: flex; }
+
+  .action-icon {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #a8a29e; border-radius: 3px; font-size: 12px;
+  }
+  .action-icon:hover { background-color: #f5f5f4; color: #57534e; }
+  .action-icon.check:hover { color: #22c55e; background-color: #dcfce7; }
+  .action-icon.palette:hover { color: #e11d48; background-color: #ffe4e6; }
+  .action-icon.move:hover { color: #0284c7; background-color: #e0f2fe; }
+  .action-icon.top:hover { color: #8b5cf6; background-color: #f3e8ff; }
+  .action-icon.bottom:hover { color: #f97316; background-color: #ffedd5; }
+  
+  .menu-toggle { font-weight: bold; }
+  body.action-menu-pinned .menu-toggle { background-color: #e0f2fe; color: #0284c7; }
+
+  /* カラーパレット & コンテキストメニュー共通 */
+  .popup-menu {
+    position: absolute; 
+    background: white; border: 1px solid #e7e5e4; border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 4px;
+    display: flex; flex-direction: column; gap: 2px;
+    z-index: 100; min-width: 120px;
+  }
+  .popup-menu-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: #44403c;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .popup-menu-item:hover { background-color: #f0f9ff; color: #0284c7; }
+  .popup-menu-header {
+    font-size: 10px; color: #a8a29e; padding: 4px 8px; border-bottom: 1px solid #f5f5f4; margin-bottom: 2px;
+  }
+
+  .palette-row { display: flex; gap: 4px; justify-content: space-between; align-items: center;}
+  .palette-label { font-size: 10px; color: #a8a29e; }
+  .color-swatch { width: 16px; height: 16px; border-radius: 3px; cursor: pointer; border: 1px solid #e5e5e5; }
+  .color-swatch:hover { transform: scale(1.1); }
+
+  /* --- 選択操作バー --- */
+  #selection-bar {
+    background: #f0f9ff;
+    border-top: 1px solid #bae6fd;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #0369a1;
+  }
+
+  /* フッター */
+  footer {
+    background: #fafaf9; border-top: 1px solid #e7e5e4;
+    padding: 8px 16px; display: flex;
+    justify-content: space-between; align-items: center; gap: 8px;
+  }
+
+  .btn-group { display: flex; gap: 4px; }
+  .btn-primary {
+    background: #0ea5e9; color: white; border: none;
+    padding: 6px 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: #0284c7; }
+  .btn-secondary { 
+    background: white; border: 1px solid #cbd5e1; color: #475569; padding: 6px 10px; 
+    border-radius: 4px; cursor: pointer;
+  }
+  .btn-secondary:hover { background: #f1f5f9; }
+  .undo-redo { display: flex; gap: 2px; }
+  .hidden { display: none !important; }
+
+  /* --- テーマカラー (背景とタブ) --- */
+  .editor-bg-red { background-color: #fef2f2 !important; }
+  .editor-bg-blue { background-color: #f0f9ff !important; }
+  .editor-bg-green { background-color: #f0fdf4 !important; }
+  .editor-bg-yellow { background-color: #fefce8 !important; }
+  .editor-bg-purple { background-color: #faf5ff !important; }
+
+  .tab.tab-bg-red { background-color: #fee2e2; }
+  .tab.tab-bg-red.active { background-color: #fef2f2; }
+  .tab.tab-bg-blue { background-color: #e0f2fe; }
+  .tab.tab-bg-blue.active { background-color: #f0f9ff; }
+  .tab.tab-bg-green { background-color: #dcfce7; }
+  .tab.tab-bg-green.active { background-color: #f0fdf4; }
+  .tab.tab-bg-yellow { background-color: #fef9c3; }
+  .tab.tab-bg-yellow.active { background-color: #fefce8; }
+  .tab.tab-bg-purple { background-color: #f3e8ff; }
+  .tab.tab-bg-purple.active { background-color: #faf5ff; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div id="header-bar">
+    <div class="header-left">
+      <span style="font-weight:bold; font-size:12px; color:#57534e;">memo tool</span>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-sort-stars" class="control-btn" title="★の数で降順ソート" style="margin-left: 4px;">★↓</button>
+    </div>
+  </div>
+</header>
+
+<!-- タブバー領域 -->
+<div id="tab-header-area">
+  <!-- 左スクロールボタン -->
+  <button id="tab-scroll-left" class="tab-scroll-btn">‹</button>
+
+  <!-- タブリスト -->
+  <div id="tab-list">
+    <!-- JSでタブを生成 -->
+  </div>
+
+  <!-- 右スクロールボタン -->
+  <button id="tab-scroll-right" class="tab-scroll-btn">›</button>
+
+  <!-- 新規作成ボタン (スクロールの外に配置) -->
+  <div class="new-tab-wrapper">
+    <div id="new-tab-btn" title="新規メモ作成">＋</div>
+    <!-- モード選択メニュー -->
+    <div id="new-tab-menu" class="mode-menu">
+      <div class="mode-menu-item" id="menu-outliner">
+        <span>🔹 アウトライナー</span>
+      </div>
+      <div class="mode-menu-item" id="menu-text">
+        <span>📝 テキスト</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- エディタエリア -->
+<div id="editor-container">
+  <div id="editor">
+    <!-- JSでアイテム生成 -->
+  </div>
+</div>
+
+<!-- 選択操作バー -->
+<div id="selection-bar" class="hidden">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <span id="selection-count" style="font-weight:bold;">0 items</span>
+    <span style="font-size:11px;">selected</span>
+  </div>
+  <div class="btn-group">
+    <button id="btn-selection-cancel" class="btn-secondary">Cancel</button>
+    <button id="btn-selection-move" class="btn-primary">Move...</button>
+  </div>
+</div>
+
+<!-- フッター -->
+<footer>
+  <div class="undo-redo">
+    <button id="btn-undo" title="元に戻す (Ctrl+Z)">↺</button>
+    <button id="btn-redo" title="やり直す (Ctrl+Shift+Z)">↻</button>
+  </div>
+  <div class="btn-group">
+    <button id="btn-force-reload" class="btn-secondary" title="最新データを再読み込み">🔄</button>
+    <button id="btn-copy-clipboard" class="btn-secondary" title="クリップボードにコピー (閉じません)">📋 Copy</button>
+    <button id="btn-download-txt" class="btn-secondary" title=".txtで保存して閉じる">.txt</button>
+    <button id="btn-download-md" class="btn-primary" title=".mdで保存して閉じる">.md DL</button>
+  </div>
+</footer>
+
+<script>
+// --- グローバル変数 & 状態管理 ---
+
+let tabs = [];
+let activeTabId = null;
+
+// Undo/Redo用
+const historyStacks = {};
+
+// タブドラッグスクロール & 並べ替え用
+let isScrollDragging = false; 
+let dragSrcTabId = null; // DnDで移動中のタブID
+
+// 複数選択用状態
+let selectedItemIds = new Set();
+let lastSelectionIndex = -1; // Shiftキー選択用
+
+// ステップアップで追加された状態管理
+let isActionMenuPinned = false; 
+let isDraggingSelection = false; // ドラッグ選択中のフラグ
+
+// --- 行のドラッグ＆ドロップ移動用 ---
+let dragSrcRowIndex = null;
+let isRowDragHandleDown = false; // アイコンをつかんでいるかどうかのフラグ
+
+// --- 同期・保存制御用フラグ (先祖返り防止) ---
+let lastSavedTabsJSON = ""; 
+let isDirty = false;       
+
+// --- 開発更新履歴 ---
+// 新しい履歴を配列の先頭（上）に追加していきます
+const appHistory = [
+  { date: '2026/03/05 13:50', text: '更新履歴のモーダル表示機能を追加' },
+  { date: '2026/03/05 13:30', text: 'ノード（および子ノード）のコピー機能を追加' },
+];
+
+// --- Web版用の保存・同期ヘルパー ---
+const STORAGE_KEYS = {
+  tabs: 'memoTool.tabs',
+  activeTabId: 'memoTool.activeTabId',
+  legacyItems: 'memoTool.items'
+};
+
+// --- 初期化 ---
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
+  await migrateLegacyData();
+
+  if (tabs.length === 0) {
+    createNewTab('outliner');
+  } else if (!activeTabId || !tabs.find(t => t.id === activeTabId)) {
+    if (tabs.length > 0) {
+      activeTabId = tabs[0].id;
+    } else {
+      createNewTab('outliner');
+    }
+  }
+
+  setupEventListeners();
+  setupTabScroll(); 
+  renderTabs();
+  renderEditor();
+  
+
+  // 定期保存
+  setInterval(saveData, 5000);
+});
+
+// --- データ管理 ---
+
+function markAsDirty() {
+  isDirty = true;
+}
+
+async function loadData() {
+  try {
+    const result = await localGet(['tabs', 'activeTabId']);
+    if (result.tabs) {
+      tabs = safeParse(result.tabs, []);
+      lastSavedTabsJSON = result.tabs;
+      isDirty = false;
+
+      tabs.forEach(t => {
+        if (!t.mode) t.mode = 'outliner';
+        if (!t.content) t.content = '';
+      });
+    }
+    if (result.activeTabId) activeTabId = result.activeTabId;
+  } catch (e) {
+    console.error("Load failed", e);
+  }
+}
+
+async function saveData() {
+  if (!isDirty && tabs.length > 0) return;
+
+  try {
+    const jsonString = JSON.stringify(tabs);
+
+    await localSet({
+      tabs: jsonString,
+      activeTabId: activeTabId || ''
+    });
+
+    lastSavedTabsJSON = jsonString;
+    isDirty = false;
+
+  } catch (e) {
+    console.error("Save failed", e);
+  }
+}
+
+// --- 手動更新機能 ---
+async function forceReload() {
+  if (isDirty) {
+    if (!confirm('未保存の変更があります。破棄して最新データを読み込みますか？')) {
+      return;
+    }
+  }
+  
+  const btn = document.getElementById('btn-force-reload');
+  const originalText = btn.textContent;
+  btn.textContent = '...';
+  
+  await loadData();
+  isDirty = false;
+  selectedItemIds.clear(); 
+  
+  renderTabs();
+  renderEditor();
+  updateUndoButtons();
+  updateSortButtonVisibility();
+  
+  btn.textContent = 'OK';
+  setTimeout(() => btn.textContent = originalText, 1000);
+}
+
+async function migrateLegacyData() {
+  const result = await localGet(['items']);
+  if (result.items) {
+    try {
+      const oldItems = safeParse(result.items, []);
+      if (oldItems && oldItems.length > 0) {
+        const newTab = {
+          id: generateId(),
+          title: '引き継ぎメモ',
+          mode: 'outliner',
+          items: oldItems.map(i => ({
+            id: i.id || generateId(),
+            text: i.text || '',
+            note: '',
+            depth: i.depth || 0,
+            completed: false,
+            textColor: null,
+            markerColor: null,
+            collapsed: false,
+            updatedAt: i.updatedAt || Date.now()
+          })),
+          content: '',
+          createdAt: Date.now()
+        };
+        tabs.push(newTab);
+        activeTabId = newTab.id;
+
+        await localRemove(['items']);
+        markAsDirty();
+        saveData();
+      }
+    } catch(e) {
+      console.error("Migration failed", e);
+    }
+  }
+}
+
+// --- Undo / Redo ---
+function getHistory(tabId) {
+  if (!historyStacks[tabId]) {
+    historyStacks[tabId] = { undo: [], redo: [] };
+  }
+  return historyStacks[tabId];
+}
+
+function pushHistory() {
+  if (!activeTabId) return;
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) return;
+
+  const stack = getHistory(activeTabId);
+  
+  let snapshot;
+  if (currentTab.mode === 'text') {
+    snapshot = currentTab.content;
+    if (stack.undo.length > 0 && stack.undo[stack.undo.length - 1] === snapshot) return;
+  } else {
+    snapshot = JSON.stringify(currentTab.items);
+  }
+
+  stack.undo.push(snapshot);
+  if (stack.undo.length > 50) stack.undo.shift();
+  stack.redo = []; 
+  updateUndoButtons();
+}
+
+function undo() {
+  if (!activeTabId) return;
+  const stack = getHistory(activeTabId);
+  if (stack.undo.length === 0) return;
+
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  
+  let currentSnapshot;
+  if (currentTab.mode === 'text') {
+    currentSnapshot = currentTab.content;
+  } else {
+    currentSnapshot = JSON.stringify(currentTab.items);
+  }
+  stack.redo.push(currentSnapshot);
+  
+  const prevSnapshot = stack.undo.pop();
+  
+  if (currentTab.mode === 'text') {
+    currentTab.content = prevSnapshot;
+  } else {
+    currentTab.items = JSON.parse(prevSnapshot);
+  }
+  
+  markAsDirty();
+  renderEditor();
+  saveData();
+  updateUndoButtons();
+}
+
+function redo() {
+  if (!activeTabId) return;
+  const stack = getHistory(activeTabId);
+  if (stack.redo.length === 0) return;
+
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  
+  let currentSnapshot;
+  if (currentTab.mode === 'text') {
+    currentSnapshot = currentTab.content;
+  } else {
+    currentSnapshot = JSON.stringify(currentTab.items);
+  }
+  stack.undo.push(currentSnapshot);
+  
+  const nextSnapshot = stack.redo.pop();
+  
+  if (currentTab.mode === 'text') {
+    currentTab.content = nextSnapshot;
+  } else {
+    currentTab.items = JSON.parse(nextSnapshot);
+  }
+  
+  markAsDirty();
+  renderEditor();
+  saveData();
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  const stack = getHistory(activeTabId);
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
+  if(btnUndo) btnUndo.disabled = stack.undo.length === 0;
+  if(btnRedo) btnRedo.disabled = stack.redo.length === 0;
+}
+
+// --- タブ操作 ---
+
+function createNewTab(mode = 'outliner') {
+  const now = new Date();
+  const dateStr = `${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+  const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  
+  const icon = mode === 'outliner' ? '🔹' : '📝';
+  
+  const newTab = {
+    id: generateId(),
+    title: `${icon}メモ-${dateStr}-${timeStr}`,
+    mode: mode,
+    bgColor: null, 
+    items: mode === 'outliner' ? [{ id: generateId(), text: '', note: '', depth: 0, completed: false, collapsed: false }] : [],
+    content: '',
+    createdAt: Date.now()
+  };
+  
+  tabs.push(newTab);
+  activeTabId = newTab.id;
+  selectedItemIds.clear(); 
+  markAsDirty();
+  saveData();
+  renderTabs();
+  renderEditor();
+}
+
+function switchTab(tabId) {
+  activeTabId = tabId;
+  selectedItemIds.clear(); 
+  saveData();
+  renderTabs();
+  renderEditor();
+  updateUndoButtons();
+  updateSortButtonVisibility();
+}
+
+function renameTab(tabId, newTitle) {
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab) {
+    tab.title = newTitle;
+    markAsDirty();
+    saveData();
+    renderTabs();
+  }
+}
+
+function deleteTab(tabId) {
+  const idx = tabs.findIndex(t => t.id === tabId);
+  if (idx === -1) return;
+  
+  tabs.splice(idx, 1);
+  if (tabs.length === 0) {
+    createNewTab('outliner');
+  } else {
+    if (activeTabId === tabId) {
+      activeTabId = tabs[Math.max(0, idx - 1)].id;
+    }
+  }
+  selectedItemIds.clear();
+  markAsDirty();
+  saveData();
+  renderTabs();
+  renderEditor();
+}
+
+// --- レンダリング: タブ ---
+
+function renderTabs() {
+  const container = document.getElementById('tab-list');
+  if (!container) return;
+  
+  container.innerHTML = '';
+
+  tabs.forEach(tab => {
+    const div = document.createElement('div');
+    div.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
+    if (tab.bgColor) {
+      div.classList.add(`tab-bg-${tab.bgColor}`);
+    }
+    div.title = tab.title;
+    
+    div.draggable = true;
+    div.dataset.tabId = tab.id;
+    
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragover', handleDragOver);
+    div.addEventListener('dragleave', handleDragLeave);
+    div.addEventListener('drop', handleDrop);
+    div.addEventListener('dragend', handleDragEnd);
+
+    div.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showTabContextMenu(e.pageX, e.pageY, tab.id);
+    });
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'tab-title';
+    titleSpan.textContent = tab.title;
+    div.appendChild(titleSpan);
+
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close-tab-btn';
+    closeBtn.textContent = '✕';
+    closeBtn.title = '削除';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(confirm(`「${tab.title}」を削除しますか？`)) {
+        deleteTab(tab.id);
+      }
+    };
+    div.appendChild(closeBtn);
+
+    div.onclick = () => {
+      if (isScrollDragging) return;
+      if (tab.id !== activeTabId) switchTab(tab.id);
+    };
+    
+    div.ondblclick = (e) => {
+      e.stopPropagation();
+      if (div.querySelector('input')) return;
+
+      div.draggable = false;
+      titleSpan.style.display = 'none';
+      
+      const input = document.createElement('input');
+      input.value = tab.title;
+      input.onclick = (ev) => ev.stopPropagation();
+      
+      const finishRename = () => {
+        const newVal = input.value.trim() || '名称未設定';
+        if (newVal !== tab.title) {
+          renameTab(tab.id, newVal);
+        } else {
+          input.remove();
+          titleSpan.style.display = '';
+        }
+        div.draggable = true;
+      };
+
+      input.onblur = finishRename;
+      input.onkeydown = (ev) => {
+        if(ev.key === 'Enter') input.blur();
+      };
+      
+      div.insertBefore(input, closeBtn);
+      input.focus();
+    };
+
+    container.appendChild(div);
+  });
+  
+  updateSortButtonVisibility();
+}
+
+function updateSortButtonVisibility() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const btnSort = document.getElementById('btn-sort-stars');
+  if (btnSort) {
+    if (currentTab && currentTab.mode === 'outliner') {
+      btnSort.style.display = 'flex';
+    } else {
+      btnSort.style.display = 'none';
+    }
+  }
+}
+
+// --- タブ並べ替え (DnD) ---
+
+function handleDragStart(e) {
+  dragSrcTabId = this.dataset.tabId;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) e.preventDefault(); 
+  e.dataTransfer.dropEffect = 'move';
+  if (dragSrcTabId === this.dataset.tabId) return false;
+  this.classList.add('drag-over');
+  return false;
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+  if (e.stopPropagation) e.stopPropagation(); 
+
+  this.classList.remove('drag-over');
+  const dropTargetId = this.dataset.tabId;
+
+  if (dragSrcTabId && dragSrcTabId !== dropTargetId) {
+    const fromIndex = tabs.findIndex(t => t.id === dragSrcTabId);
+    const toIndex = tabs.findIndex(t => t.id === dropTargetId);
+
+    if (fromIndex > -1 && toIndex > -1) {
+      const [movedTab] = tabs.splice(fromIndex, 1);
+      tabs.splice(toIndex, 0, movedTab);
+      markAsDirty();
+      saveData();
+      renderTabs();
+    }
+  }
+  return false;
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('drag-over');
+    t.classList.remove('dragging');
+  });
+  dragSrcTabId = null;
+}
+
+// --- タブの右クリックメニュー ---
+function showTabContextMenu(x, y, tabId) {
+  closeAllPopups();
+  const tab = tabs.find(t => t.id === tabId);
+  if (!tab) return;
+
+  const menu = document.createElement('div');
+  menu.className = 'popup-menu';
+  menu.style.left = Math.min(x, window.innerWidth - 150) + 'px';
+  menu.style.top = y + 'px';
+  menu.style.position = 'fixed'; 
+
+  const renameItem = document.createElement('div');
+  renameItem.className = 'popup-menu-item';
+  renameItem.innerHTML = `<span>✏️ 名称を変更</span>`;
+  renameItem.onclick = () => {
+    menu.remove();
+    const tabEl = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+    if (tabEl) {
+      const dblclickEvent = new MouseEvent('dblclick', { bubbles: true });
+      tabEl.dispatchEvent(dblclickEvent);
+    }
+  };
+  menu.appendChild(renameItem);
+
+  const colorHeader = document.createElement('div');
+  colorHeader.className = 'popup-menu-header';
+  colorHeader.textContent = '背景色';
+  colorHeader.style.marginTop = '4px';
+  menu.appendChild(colorHeader);
+
+  const colorRow = document.createElement('div');
+  colorRow.className = 'palette-row';
+  colorRow.style.padding = '4px 8px';
+  colorRow.style.justifyContent = 'flex-start';
+  colorRow.style.gap = '6px';
+  
+  const colors = [
+    { val: null, ui: '#ffffff', title: 'デフォルト' }, 
+    { val: 'red', ui: '#fca5a5', title: '赤' },
+    { val: 'blue', ui: '#7dd3fc', title: '青' },
+    { val: 'green', ui: '#86efac', title: '緑' },
+    { val: 'yellow', ui: '#fde047', title: '黄' },
+    { val: 'purple', ui: '#d8b4fe', title: '紫' }
+  ];
+
+  colors.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch';
+    swatch.style.background = c.ui;
+    swatch.title = c.title;
+    if (!c.val) swatch.innerHTML = '<span style="font-size:10px;color:#ccc;text-align:center;display:block;line-height:14px;">x</span>';
+    swatch.onclick = () => {
+      changeTabColor(tabId, c.val);
+      menu.remove();
+    };
+    colorRow.appendChild(swatch);
+  });
+  menu.appendChild(colorRow);
+
+  const deleteItem = document.createElement('div');
+  deleteItem.className = 'popup-menu-item';
+  deleteItem.style.marginTop = '4px';
+  deleteItem.style.borderTop = '1px solid #f5f5f4';
+  deleteItem.innerHTML = `<span style="color:#ef4444;">🗑️ 削除</span>`;
+  deleteItem.onclick = () => {
+    menu.remove();
+    if(confirm(`「${tab.title}」を削除しますか？`)) deleteTab(tabId);
+  };
+  menu.appendChild(deleteItem);
+
+  setupPopupClose(menu);
+  document.body.appendChild(menu);
+}
+
+function changeTabColor(tabId, color) {
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab) {
+    tab.bgColor = color;
+    markAsDirty();
+    saveData();
+    renderTabs();
+    if (activeTabId === tabId) applyEditorTheme();
+  }
+}
+
+function applyEditorTheme() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const container = document.getElementById('editor-container');
+  if (!container) return;
+  
+  container.classList.remove('editor-bg-red', 'editor-bg-blue', 'editor-bg-green', 'editor-bg-yellow', 'editor-bg-purple');
+  if (currentTab && currentTab.bgColor) {
+    container.classList.add(`editor-bg-${currentTab.bgColor}`);
+  }
+}
+
+// --- タブのドラッグスクロール ---
+function setupTabScroll() {
+  const slider = document.getElementById('tab-list');
+  const btnLeft = document.getElementById('tab-scroll-left');
+  const btnRight = document.getElementById('tab-scroll-right');
+
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+  
+  btnLeft.onclick = () => slider.scrollBy({ left: -100, behavior: 'smooth' });
+  btnRight.onclick = () => slider.scrollBy({ left: 100, behavior: 'smooth' });
+
+  slider.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.tab')) return;
+    isDown = true;
+    isScrollDragging = false;
+    slider.classList.add('grabbing');
+    startX = e.pageX - slider.offsetLeft;
+    scrollLeft = slider.scrollLeft;
+  });
+
+  slider.addEventListener('mouseleave', () => {
+    isDown = false;
+    slider.classList.remove('grabbing');
+    setTimeout(() => { isScrollDragging = false; }, 0);
+  });
+
+  slider.addEventListener('mouseup', () => {
+    isDown = false;
+    slider.classList.remove('grabbing');
+    setTimeout(() => { isScrollDragging = false; }, 50);
+  });
+
+  slider.addEventListener('mousemove', (e) => {
+    if(!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - slider.offsetLeft;
+    const walk = (x - startX); 
+    if (Math.abs(walk) > 3) {
+      isScrollDragging = true;
+      slider.scrollLeft = scrollLeft - walk;
+    }
+  });
+
+  slider.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0) {
+      e.preventDefault();
+      slider.scrollLeft += e.deltaY;
+    }
+  });
+}
+
+// --- URL抽出ヘルパー ---
+function extractUrls(text) {
+  const regex = /(https?:\/\/[^\s]+)/g;
+  const matches = text.match(regex);
+  return matches || [];
+}
+
+function renderNoteLinks(container, text) {
+  container.innerHTML = '';
+  const urls = extractUrls(text);
+  
+  if (urls.length > 0) {
+    container.style.display = 'flex';
+    urls.forEach(url => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.className = 'note-link-btn';
+      let displayUrl = url.replace(/^https?:\/\//, '');
+      if (displayUrl.length > 30) displayUrl = displayUrl.substring(0, 27) + '...';
+      a.innerHTML = `🔗 ${displayUrl}`;
+      a.title = url;
+      a.addEventListener('mousedown', (e) => e.stopPropagation());
+      a.addEventListener('click', (e) => e.stopPropagation());
+      container.appendChild(a);
+    });
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+// --- レンダリング: エディタ ---
+
+function renderEditor() {
+  const editor = document.getElementById('editor');
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) {
+    editor.innerHTML = '';
+    return;
+  }
+  
+  editor.innerHTML = '';
+  updateSelectionUI(); 
+  applyEditorTheme(); 
+
+  if (currentTab.mode === 'text') {
+    const textarea = document.createElement('textarea');
+    textarea.className = 'text-editor-area';
+    textarea.value = currentTab.content;
+    textarea.placeholder = 'ここに入力...';
+    textarea.spellcheck = false;
+
+    let isComposing = false;
+    textarea.addEventListener('compositionstart', () => { isComposing = true; });
+    textarea.addEventListener('compositionend', () => { isComposing = false; pushHistory(); });
+    
+    textarea.oninput = (e) => {
+      markAsDirty();
+      currentTab.content = e.target.value;
+    };
+    
+    textarea.onkeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        e.shiftKey ? redo() : undo();
+        return;
+      }
+      if (['Enter', ' '].includes(e.key) && !isComposing) pushHistory();
+    };
+
+    textarea.onblur = () => saveData();
+    editor.appendChild(textarea);
+    return;
+  }
+
+  let skipUntilDepth = -1; 
+  currentTab.items.forEach((item, index) => {
+    if (item.completed) return;
+
+    if (skipUntilDepth !== -1) {
+      if (item.depth > skipUntilDepth) return; 
+      else skipUntilDepth = -1; 
+    }
+    if (item.collapsed) skipUntilDepth = item.depth;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.draggable = true; // --- 追加: 行をドラッグ可能にする ---
+    row.dataset.index = index; // インデックスを保持
+    
+    if (selectedItemIds.has(item.id)) row.classList.add('selected');
+    row.style.paddingLeft = (item.depth * 20) + 'px';
+    
+    // --- 行のドラッグ＆ドロップイベント ---
+    row.addEventListener('dragstart', (e) => {
+      // アイコンをつかんでいない場合はドラッグをキャンセル
+      if (!isRowDragHandleDown) {
+        e.preventDefault();
+        return;
+      }
+      dragSrcRowIndex = index;
+      e.dataTransfer.effectAllowed = 'move';
+      row.style.opacity = '0.5';
+    });
+
+    row.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const bounding = row.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      // マウスが要素の上半分か下半分かで挿入位置のハイライトを変える
+      if (e.clientY - offset > 0) {
+        row.style.borderBottom = '2px solid #0ea5e9';
+        row.style.borderTop = '';
+      } else {
+        row.style.borderTop = '2px solid #0ea5e9';
+        row.style.borderBottom = '';
+      }
+    });
+
+    row.addEventListener('dragleave', () => {
+      row.style.borderTop = '';
+      row.style.borderBottom = '';
+    });
+
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.style.borderTop = '';
+      row.style.borderBottom = '';
+      if (dragSrcRowIndex !== null && dragSrcRowIndex !== index) {
+        const bounding = row.getBoundingClientRect();
+        const offset = bounding.y + (bounding.height / 2);
+        // 挿入位置（自分の前か後か）
+        const insertAfter = (e.clientY - offset > 0);
+        handleRowDrop(dragSrcRowIndex, index, insertAfter);
+      }
+      dragSrcRowIndex = null;
+      isRowDragHandleDown = false;
+    });
+
+    row.addEventListener('dragend', () => {
+      row.style.opacity = '1';
+      document.querySelectorAll('.row').forEach(r => {
+        r.style.borderTop = '';
+        r.style.borderBottom = '';
+      });
+      dragSrcRowIndex = null;
+      isRowDragHandleDown = false;
+    });
+    
+    // --- 複数選択（CTRL+ドラッグ）のイベント ---
+    row.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.action-icon') || e.target.closest('.fold-icon') || e.target.closest('.note-link-btn')) return;
+      if (e.target.classList.contains('item-input') || e.target.classList.contains('item-note') || e.target.classList.contains('item-note-display')) return;
+      
+      e.preventDefault(); 
+      if (e.ctrlKey || e.metaKey) {
+        // CTRL + ドラッグ開始
+        isDraggingSelection = true;
+        selectedItemIds.add(item.id);
+        lastSelectionIndex = index;
+        row.classList.add('selected');
+        updateSelectionUI();
+      } else if (e.shiftKey) {
+        handleRowSelection(e, item, index);
+      }
+    });
+
+    row.addEventListener('mouseenter', () => {
+      if (isDraggingSelection) {
+        selectedItemIds.add(item.id); // どんどん追加で選択
+        lastSelectionIndex = index;
+        row.classList.add('selected');
+        updateSelectionUI();
+      }
+    });
+
+    row.oncontextmenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showMoveTabMenu(e.pageX, e.pageY, index);
+    };
+
+    const line = document.createElement('div');
+    line.className = 'guide-line';
+    line.style.left = (item.depth * 20) + 'px';
+    
+    let hasChildren = false;
+    for (let i = index + 1; i < currentTab.items.length; i++) {
+        if (currentTab.items[i].depth <= item.depth) break;
+        if (!currentTab.items[i].completed) {
+            hasChildren = true;
+            break;
+        }
+    }
+
+    // ★追加: 子要素を持っていて、かつ折り畳まれている行に専用のクラスを付与
+    if (hasChildren && item.collapsed) {
+      row.classList.add('is-collapsed-row');
+    }
+
+    const foldIcon = document.createElement('div');
+    foldIcon.className = 'fold-icon';
+    if (hasChildren) {
+      if (item.collapsed) {
+        foldIcon.textContent = '▶';
+        foldIcon.classList.add('collapsed');
+      } else {
+        foldIcon.textContent = '▼';
+      }
+      foldIcon.onclick = (e) => {
+        if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
+          e.stopPropagation();
+          toggleFold(index);
+        }
+      };
+    } else {
+      foldIcon.textContent = '•'; 
+      foldIcon.classList.add('leaf');
+    }
+    
+    // アイコンのマウスダウンでドラッグ可能フラグを立てる、または選択
+    foldIcon.addEventListener('mousedown', (e) => {
+       if (e.ctrlKey || e.metaKey || e.shiftKey) {
+         e.preventDefault();
+         e.stopPropagation();
+         handleRowSelection(e, item, index);
+       } else {
+         isRowDragHandleDown = true; // ドラッグ開始のハンドルとして認識
+       }
+    });
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-wrapper';
+    
+    const input = document.createElement('textarea');
+    input.className = 'item-input';
+    input.dataset.id = item.id;
+    input.value = item.text;
+    input.rows = 1; 
+    input.placeholder = (currentTab.items.filter(i => !i.completed).length === 1 && item.text === '') ? 'ここに入力...' : '';
+    input.spellcheck = false;
+    
+    if (item.textColor) input.classList.add(`text-${item.textColor}`);
+    if (item.markerColor) input.classList.add(`bg-${item.markerColor}`);
+    
+    input.addEventListener('mousedown', (e) => {
+       if (e.ctrlKey || e.metaKey || e.shiftKey) {
+         e.preventDefault(); 
+         e.stopPropagation();
+         handleRowSelection(e, item, index);
+       }
+    });
+
+    input.oninput = (e) => {
+      markAsDirty();
+      item.text = e.target.value;
+      autoResize(e.target);
+    };
+    
+    input.onkeydown = (e) => handleKey(e, index, item);
+    input.onpaste = (e) => handlePaste(e, index, item);
+
+    const noteInput = document.createElement('textarea');
+    noteInput.className = 'item-note';
+    noteInput.classList.add('hidden'); // 初期状態は隠す
+    noteInput.value = item.note || '';
+    noteInput.placeholder = '詳細を追加...';
+    noteInput.spellcheck = false;
+
+    // 省略表示用の要素
+    const noteDisplay = document.createElement('div');
+    noteDisplay.className = 'item-note-display';
+    if (!item.note) {
+      noteDisplay.classList.add('hidden');
+    } else {
+      const text = item.note || '';
+      noteDisplay.textContent = text.length > 15 ? text.substring(0, 15) + '...' : text;
+    }
+
+    // クリック時の切り替えイベント
+    noteDisplay.onclick = (e) => {
+      e.stopPropagation();
+      noteDisplay.classList.add('hidden');
+      noteInput.classList.remove('hidden');
+      noteInput.focus();
+      autoResize(noteInput);
+    };
+
+    const linkContainer = document.createElement('div');
+    linkContainer.className = 'note-link-container';
+    if (item.note) renderNoteLinks(linkContainer, item.note);
+
+    noteInput.oninput = (e) => {
+      markAsDirty();
+      item.note = e.target.value;
+      autoResize(e.target);
+      renderNoteLinks(linkContainer, e.target.value);
+    };
+
+    noteInput.onkeydown = (e) => handleNoteKey(e, index, item);
+    noteInput.onblur = () => {
+      const text = noteInput.value.trim();
+      if (!text) {
+        // テキストが空になった場合：入力欄も省略表示も隠す
+        noteInput.classList.add('hidden');
+        noteDisplay.classList.add('hidden');
+        linkContainer.style.display = 'none';
+        item.note = '';
+      } else {
+        // テキストがある場合：省略表示を更新して再表示し、入力欄を隠す
+        noteDisplay.textContent = text.length > 15 ? text.substring(0, 15) + '...' : text;
+        noteInput.classList.add('hidden');
+        noteDisplay.classList.remove('hidden');
+      }
+      saveData();
+    };
+
+    const actions = document.createElement('div');
+    actions.className = 'row-actions';
+    
+    const actionBtns = document.createElement('div');
+    actionBtns.className = 'action-buttons';
+
+    const btnCheck = document.createElement('div');
+    btnCheck.className = 'action-icon check';
+    btnCheck.textContent = '✓';
+    btnCheck.onclick = () => completeItem(index);
+    
+    const btnPalette = document.createElement('div');
+    btnPalette.className = 'action-icon palette';
+    btnPalette.textContent = '🎨';
+    btnPalette.onclick = (e) => {
+      e.stopPropagation();
+      showColorPalette(e.target, index);
+    };
+
+    const btnTop = document.createElement('div');
+    btnTop.className = 'action-icon top';
+    btnTop.textContent = '⏫';
+    btnTop.onclick = (e) => { e.stopPropagation(); moveItemToTop(index); };
+
+    const btnBottom = document.createElement('div');
+    btnBottom.className = 'action-icon bottom';
+    btnBottom.textContent = '⏬';
+    btnBottom.onclick = (e) => { e.stopPropagation(); moveItemToBottom(index); };
+
+    const btnMove = document.createElement('div');
+    btnMove.className = 'action-icon move';
+    btnMove.textContent = '➡';
+    btnMove.onclick = (e) => {
+      e.stopPropagation();
+      const rect = e.target.getBoundingClientRect();
+      showMoveTabMenu(rect.left, rect.bottom, index);
+    };
+
+    // --- 新規追加: コピーボタン ---
+    const btnCopy = document.createElement('div');
+    btnCopy.className = 'action-icon copy';
+    btnCopy.textContent = '⧉';
+    btnCopy.onclick = (e) => { e.stopPropagation(); copyItem(index); };
+
+    actionBtns.appendChild(btnPalette);
+    actionBtns.appendChild(btnTop);
+    actionBtns.appendChild(btnBottom);
+    actionBtns.appendChild(btnCopy);
+    actionBtns.appendChild(btnMove);
+    actionBtns.appendChild(btnCheck);
+
+    // ⋮ (メニュー) ボタン
+    const btnMenu = document.createElement('div');
+    btnMenu.className = 'action-icon menu-toggle';
+    btnMenu.textContent = '⋮';
+    btnMenu.onclick = (e) => {
+      e.stopPropagation();
+      isActionMenuPinned = !isActionMenuPinned; 
+      if (isActionMenuPinned) document.body.classList.add('action-menu-pinned');
+      else document.body.classList.remove('action-menu-pinned');
+    };
+
+    actions.appendChild(actionBtns);
+    actions.appendChild(btnMenu);
+
+    wrapper.appendChild(input);
+    wrapper.appendChild(noteInput);
+    wrapper.appendChild(noteDisplay); 
+    wrapper.appendChild(linkContainer);
+    row.appendChild(line);
+    row.appendChild(foldIcon); 
+    row.appendChild(wrapper);
+    row.appendChild(actions);
+    
+    editor.appendChild(row);
+    autoResize(input);
+    if (!noteInput.classList.contains('hidden')) autoResize(noteInput);
+  });
+}
+
+// --- 行のドロップ処理（タスクの移動） ---
+function handleRowDrop(fromIndex, toIndex, insertAfter) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || currentTab.mode !== 'outliner') return;
+  
+  // 移動元の要素と子要素の数を取得
+  const count = getSubtreeCount(currentTab, fromIndex);
+  
+  // 移動元と移動先が重なっている（子タスクの中に移動しようとしている）場合はキャンセル
+  if (toIndex >= fromIndex && toIndex < fromIndex + count) return;
+  
+  pushHistory();
+  
+  // 移動先の深さを基準にする
+  const targetItem = currentTab.items[toIndex];
+  let newDepth = targetItem.depth;
+  
+  // 移動する要素を取り出す
+  const itemsToMove = currentTab.items.splice(fromIndex, count);
+  
+  // spliceしたことでtoIndexがずれる場合があるため補正
+  let adjustedToIndex = toIndex;
+  if (fromIndex < toIndex) {
+    adjustedToIndex -= count;
+  }
+  
+  // 挿入位置を決定
+  let insertIndex = adjustedToIndex;
+  if (insertAfter) {
+    // ターゲットが展開されていて子を持つなら、その子の先頭に入れる（一段深くする）
+    let hasChildren = false;
+    if (adjustedToIndex + 1 < currentTab.items.length && currentTab.items[adjustedToIndex + 1].depth > targetItem.depth) {
+      hasChildren = true;
+    }
+    
+    if (hasChildren && !targetItem.collapsed) {
+      newDepth = targetItem.depth + 1;
+      insertIndex = adjustedToIndex + 1;
+    } else {
+      // それ以外はターゲットのサブツリーの後ろに入れる
+      const targetSubtreeCount = getSubtreeCount(currentTab, adjustedToIndex);
+      insertIndex = adjustedToIndex + targetSubtreeCount;
+    }
+  }
+  
+  // 深さを調整
+  const depthDiff = newDepth - itemsToMove[0].depth;
+  itemsToMove.forEach(item => {
+    item.depth = Math.max(0, item.depth + depthDiff);
+  });
+  
+  // 要素を挿入
+  currentTab.items.splice(insertIndex, 0, ...itemsToMove);
+  
+  markAsDirty();
+  saveData();
+  renderEditor();
+  
+  setTimeout(() => focusItemById(itemsToMove[0].id), 0);
+}
+
+// --- コピー機能 (単一ノード ＋ 子ノード) ---
+function copyItem(index) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || currentTab.mode !== 'outliner') return;
+  pushHistory();
+
+  const count = getSubtreeCount(currentTab, index);
+  const itemsToCopy = currentTab.items.slice(index, index + count);
+  
+  // ディープコピーして新しいIDを付与
+  const newItems = itemsToCopy.map(item => ({...item, id: generateId()}));
+  
+  // 親ノードに「（コピー）」をつける
+  newItems[0].text += '（コピー）';
+
+  // コピー先は元のサブツリーのすぐ下
+  currentTab.items.splice(index + count, 0, ...newItems);
+
+  markAsDirty();
+  saveData();
+  renderEditor();
+  
+  // コピー後の親要素にフォーカスを当てる
+  setTimeout(() => focusItemById(newItems[0].id), 0);
+}
+
+// --- コピー機能 (複数選択一括) ---
+function copySelectedItems() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || selectedItemIds.size === 0) return;
+  pushHistory();
+
+  // 選択されているアイテムのインデックスを取得（昇順）
+  const selectedIndices = [];
+  currentTab.items.forEach((item, index) => {
+    if (selectedItemIds.has(item.id)) selectedIndices.push(index);
+  });
+
+  // 選択されたインデックスのうち、祖先がすでに選択されている場合は除外する（二重コピー防止）
+  const topLevelIndices = [];
+  for (let i = 0; i < selectedIndices.length; i++) {
+    const idx = selectedIndices[i];
+    let hasSelectedAncestor = false;
+    for (let j = 0; j < i; j++) {
+       const prevIdx = selectedIndices[j];
+       if (prevIdx < idx && prevIdx + getSubtreeCount(currentTab, prevIdx) > idx) {
+           hasSelectedAncestor = true;
+           break;
+       }
+    }
+    if (!hasSelectedAncestor) topLevelIndices.push(idx);
+  }
+
+  // インデックスのずれを防ぐため、後ろ（大きいインデックス）から処理する
+  for (let i = topLevelIndices.length - 1; i >= 0; i--) {
+      const idx = topLevelIndices[i];
+      const count = getSubtreeCount(currentTab, idx);
+      const itemsToCopy = currentTab.items.slice(idx, idx + count);
+      
+      const copied = itemsToCopy.map(item => ({...item, id: generateId()}));
+      copied[0].text += '（コピー）';
+      
+      currentTab.items.splice(idx + count, 0, ...copied);
+  }
+
+  selectedItemIds.clear();
+  markAsDirty();
+  saveData();
+  renderEditor();
+}
+
+// --- 複数選択ロジック ---
+
+function handleRowSelection(e, item, index) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) return;
+
+  if (e.shiftKey && lastSelectionIndex !== -1) {
+    const start = Math.min(lastSelectionIndex, index);
+    const end = Math.max(lastSelectionIndex, index);
+    if (!(e.ctrlKey || e.metaKey)) selectedItemIds.clear(); 
+    for (let i = start; i <= end; i++) {
+      if (!currentTab.items[i].completed) selectedItemIds.add(currentTab.items[i].id);
+    }
+  } else if (e.ctrlKey || e.metaKey) {
+    if (selectedItemIds.has(item.id)) selectedItemIds.delete(item.id);
+    else selectedItemIds.add(item.id);
+    lastSelectionIndex = index;
+  }
+  renderEditor();
+}
+
+function updateSelectionUI() {
+  const bar = document.getElementById('selection-bar');
+  const countSpan = document.getElementById('selection-count');
+  if (selectedItemIds.size > 0) {
+    bar.classList.remove('hidden');
+    bar.style.display = 'flex';
+    countSpan.textContent = `${selectedItemIds.size} items`;
+  } else {
+    bar.classList.add('hidden');
+    bar.style.display = 'none';
+  }
+}
+
+function showMultiMoveMenu() {
+  closeAllPopups();
+  const menu = document.createElement('div');
+  menu.className = 'popup-menu';
+  menu.style.left = '16px'; 
+  menu.style.bottom = '40px'; 
+  menu.style.position = 'fixed';
+
+  const header = document.createElement('div');
+  header.className = 'popup-menu-header';
+  header.textContent = `${selectedItemIds.size}件を移動...`;
+  menu.appendChild(header);
+
+  const otherTabs = tabs.filter(t => t.id !== activeTabId);
+  if (otherTabs.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.padding = '8px'; empty.style.fontSize = '11px'; empty.style.color = '#a8a29e';
+    empty.textContent = '(移動先タブがありません)';
+    menu.appendChild(empty);
+  } else {
+    otherTabs.forEach(tab => {
+      const item = document.createElement('div');
+      item.className = 'popup-menu-item';
+      const icon = tab.mode === 'outliner' ? '🔹' : '📝';
+      item.innerHTML = `<span>${icon} ${tab.title}</span>`;
+      item.onclick = () => { moveSelectedItemsToTab(tab.id); menu.remove(); };
+      menu.appendChild(item);
+    });
+  }
+  setupPopupClose(menu);
+  document.body.appendChild(menu);
+}
+
+function moveSelectedItemsToTab(targetTabId) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const targetTab = tabs.find(t => t.id === targetTabId);
+  if (!currentTab || !targetTab || selectedItemIds.size === 0) return;
+
+  pushHistory();
+  let itemsToMove = [];
+  let indicesToRemove = [];
+  currentTab.items.forEach((item, idx) => {
+    if (selectedItemIds.has(item.id)) {
+      itemsToMove.push(item);
+      indicesToRemove.push(idx);
+    }
+  });
+
+  if (itemsToMove.length > 0) {
+    const minDepth = Math.min(...itemsToMove.map(i => i.depth));
+    itemsToMove.forEach(item => { item.depth = Math.max(0, item.depth - minDepth); });
+  }
+
+  for (let i = indicesToRemove.length - 1; i >= 0; i--) currentTab.items.splice(indicesToRemove[i], 1);
+
+  if (targetTab.mode === 'outliner') {
+    targetTab.items.push(...itemsToMove);
+  } else {
+    const textToAppend = itemsToMove.map(item => `  `.repeat(item.depth) + `- ${item.text}`).join('\n');
+    if (targetTab.content && !targetTab.content.endsWith('\n')) targetTab.content += '\n';
+    targetTab.content += textToAppend;
+  }
+
+  selectedItemIds.clear();
+  markAsDirty();
+  saveData();
+  switchTab(targetTabId);
+}
+
+// --- アウトライナー専用ヘルパー ---
+
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+function showColorPalette(triggerEl, itemIndex) {
+  closeAllPopups();
+  const palette = document.createElement('div');
+  palette.className = 'color-palette popup-menu'; 
+  const createRow = (label, colors, propName) => {
+    const row = document.createElement('div');
+    row.className = 'palette-row';
+    const span = document.createElement('span'); span.className = 'palette-label'; span.textContent = label;
+    row.appendChild(span);
+    const reset = document.createElement('div');
+    reset.className = 'color-swatch'; reset.style.background = '#fff'; reset.style.border = '1px solid #ccc';
+    reset.textContent = 'x'; reset.style.fontSize = '10px'; reset.style.textAlign = 'center'; reset.style.lineHeight = '14px';
+    reset.onclick = () => applyColor(itemIndex, propName, null);
+    row.appendChild(reset);
+    colors.forEach(c => {
+      const swatch = document.createElement('div'); swatch.className = 'color-swatch';
+      const map = { 'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 'yellow': '#fef08a', 'pink': '#fbcfe8', 'blue-bg': '#bae6fd' };
+      swatch.style.background = map[c.ui || c.val]; 
+      swatch.onclick = () => applyColor(itemIndex, propName, c.val);
+      row.appendChild(swatch);
+    });
+    return row;
+  };
+  palette.appendChild(createRow('文字', [{val: 'red'}, {val: 'blue'}, {val: 'green'}], 'textColor'));
+  palette.appendChild(createRow('背景', [{val: 'yellow'}, {val: 'pink'}, {val: 'blue', ui: 'blue-bg'}], 'markerColor'));
+  setupPopupClose(palette);
+  triggerEl.parentElement.appendChild(palette);
+}
+
+function showMoveTabMenu(x, y, itemIndex) {
+  closeAllPopups();
+  const menu = document.createElement('div');
+  menu.className = 'popup-menu';
+  menu.style.left = Math.min(x, window.innerWidth - 130) + 'px';
+  menu.style.top = y + 'px';
+  menu.style.position = 'fixed'; 
+
+  const header = document.createElement('div');
+  header.className = 'popup-menu-header'; header.textContent = '別タブへ移動...';
+  menu.appendChild(header);
+
+  const otherTabs = tabs.filter(t => t.id !== activeTabId);
+  if (otherTabs.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.padding = '8px'; empty.style.fontSize = '11px'; empty.style.color = '#a8a29e';
+    empty.textContent = '(移動先タブがありません)';
+    menu.appendChild(empty);
+  } else {
+    otherTabs.forEach(tab => {
+      const item = document.createElement('div');
+      item.className = 'popup-menu-item';
+      const icon = tab.mode === 'outliner' ? '🔹' : '📝';
+      item.innerHTML = `<span>${icon} ${tab.title}</span>`;
+      item.onclick = () => { moveItemToTab(itemIndex, tab.id); menu.remove(); };
+      menu.appendChild(item);
+    });
+  }
+  setupPopupClose(menu);
+  document.body.appendChild(menu);
+}
+
+function moveItemToTab(index, targetTabId) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const targetTab = tabs.find(t => t.id === targetTabId);
+  if (!currentTab || !targetTab) return;
+  pushHistory();
+  const count = getSubtreeCount(currentTab, index);
+  const itemsToMove = currentTab.items.splice(index, count);
+  if (itemsToMove.length > 0) {
+    const baseDepth = itemsToMove[0].depth;
+    itemsToMove.forEach(item => { item.depth = Math.max(0, item.depth - baseDepth); });
+  }
+  if (targetTab.mode === 'outliner') {
+    targetTab.items.push(...itemsToMove);
+  } else {
+    const textToAppend = itemsToMove.map(item => `  `.repeat(item.depth) + `- ${item.text}`).join('\n');
+    if (targetTab.content && !targetTab.content.endsWith('\n')) targetTab.content += '\n';
+    targetTab.content += textToAppend;
+  }
+  markAsDirty(); saveData(); switchTab(targetTabId);
+}
+
+function moveItemToTop(index) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || index === 0) return;
+  pushHistory();
+  const count = getSubtreeCount(currentTab, index);
+  const itemsToMove = currentTab.items.splice(index, count);
+  if (itemsToMove.length > 0) {
+    const baseDepth = itemsToMove[0].depth;
+    itemsToMove.forEach(item => { item.depth = Math.max(0, item.depth - baseDepth); });
+  }
+  currentTab.items.unshift(...itemsToMove);
+  markAsDirty(); saveData(); renderEditor();
+  setTimeout(() => focusItemById(itemsToMove[0].id), 0);
+}
+
+function moveItemToBottom(index) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) return;
+  const count = getSubtreeCount(currentTab, index);
+  if (index + count >= currentTab.items.length) return;
+  pushHistory();
+  const itemsToMove = currentTab.items.splice(index, count);
+  if (itemsToMove.length > 0) {
+    const baseDepth = itemsToMove[0].depth;
+    itemsToMove.forEach(item => { item.depth = Math.max(0, item.depth - baseDepth); });
+  }
+  currentTab.items.push(...itemsToMove);
+  markAsDirty(); saveData(); renderEditor();
+  setTimeout(() => focusItemById(itemsToMove[0].id), 0);
+}
+
+function deleteSelectedItems() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || selectedItemIds.size === 0) return;
+  pushHistory();
+  for (let i = currentTab.items.length - 1; i >= 0; i--) {
+    if (selectedItemIds.has(currentTab.items[i].id)) currentTab.items.splice(i, 1);
+  }
+  const visibleItems = currentTab.items.filter(i => !i.completed);
+  if (visibleItems.length === 0) {
+    currentTab.items.push({ id: generateId(), text: '', note: '', depth: 0, completed: false, collapsed: false });
+  }
+  selectedItemIds.clear(); markAsDirty(); saveData(); renderEditor();
+}
+
+function closeAllPopups() {
+  document.querySelectorAll('.popup-menu').forEach(el => el.remove());
+  document.querySelectorAll('.color-palette').forEach(el => el.remove());
+}
+
+function setupPopupClose(element) {
+  setTimeout(() => {
+    const closeHandler = (e) => {
+      if (!element.contains(e.target)) {
+        element.remove();
+        document.removeEventListener('click', closeHandler);
+        document.removeEventListener('contextmenu', closeHandler); 
+      }
+    };
+    document.addEventListener('click', closeHandler);
+    document.addEventListener('contextmenu', closeHandler);
+  }, 50);
+}
+
+function applyColor(index, prop, value) {
+  pushHistory();
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (currentTab && currentTab.items[index]) {
+    markAsDirty(); 
+    currentTab.items[index][prop] = value;
+    renderEditor(); saveData();
+  }
+}
+
+function handlePaste(e, index, item) {
+  const paste = (e.clipboardData || window.clipboardData).getData('text');
+  if (!paste.includes('\n') && !paste.includes('\r')) return;
+  e.preventDefault(); pushHistory();
+  const input = e.target; const cursorStart = input.selectionStart; const cursorEnd = input.selectionEnd;
+  const textBefore = item.text.substring(0, cursorStart); const textAfter = item.text.substring(cursorEnd);
+  const lines = paste.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  item.text = textBefore + lines[0];
+  const newItems = []; const currentTab = tabs.find(t => t.id === activeTabId);
+  for (let i = 1; i < lines.length; i++) {
+    let lineText = lines[i]; if (i === lines.length - 1) lineText += textAfter;
+    newItems.push({ id: generateId(), text: lineText, depth: item.depth, completed: false, collapsed: false });
+  }
+  let insertIndex = index + 1;
+  if (item.collapsed) insertIndex = index + getSubtreeCount(currentTab, index);
+  markAsDirty(); currentTab.items.splice(insertIndex, 0, ...newItems);
+  renderEditor(); saveData();
+  setTimeout(() => focusItemById(newItems[newItems.length - 1].id, lines[lines.length - 1].length), 0);
+}
+
+function handleKey(e, index, item) {
+  if (selectedItemIds.size > 0 && (e.key === 'Backspace' || e.key === 'Delete')) {
+    e.preventDefault(); deleteSelectedItems(); return;
+  }
+  if (e.key === 'F2') {
+    e.preventDefault(); const noteInput = e.target.nextElementSibling;
+    if (noteInput && noteInput.classList.contains('item-note')) { noteInput.classList.remove('hidden'); noteInput.focus(); }
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+    if (e.key === 'ArrowUp') { e.preventDefault(); toggleFold(index, true); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); toggleFold(index, false); return; }
+  }
+  
+  // ▼ ここを3段階トグルに修正しました ▼
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault(); 
+    pushHistory(); 
+    
+    if (item.textColor === 'bold-red') {
+      // 1回押し(赤太字) → 2回押し(緑・非太字 ＋ ⏳追加)
+      item.textColor = 'green';
+      e.target.classList.remove('text-bold-red');
+      e.target.classList.add('text-green');
+      if (!item.text.startsWith('⏳')) {
+        item.text = '⏳' + item.text;
+        e.target.value = '⏳' + e.target.value;
+      }
+    } else if (item.textColor === 'green') {
+      // 2回押し(待ち状態) → 通常に戻る (⏳も削除)
+      item.textColor = null;
+      e.target.classList.remove('text-green');
+      if (item.text.startsWith('⏳')) {
+        item.text = item.text.replace(/^⏳/, '');
+        e.target.value = e.target.value.replace(/^⏳/, '');
+      }
+    } else {
+      // 通常 → 1回押し(赤太字)
+      item.textColor = 'bold-red';
+      e.target.classList.add('text-bold-red');
+    }
+    
+    markAsDirty(); 
+    saveData(); 
+    autoResize(e.target);
+    return;
+  }
+  // ▲ 修正ここまで ▲
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault(); e.shiftKey ? redo() : undo(); return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault(); completeItem(index); return;
+  }
+  if (e.shiftKey && (e.altKey || e.ctrlKey || e.metaKey)) {
+    if (e.key === 'ArrowUp') { e.preventDefault(); moveItem(index, true); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveItem(index, false); return; }
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault(); pushHistory(); const currentTab = tabs.find(t => t.id === activeTabId);
+    const newDepth = e.shiftKey ? item.depth - 1 : item.depth + 1;
+    if (newDepth < 0) return;
+    if (!e.shiftKey && index > 0 && newDepth > currentTab.items[index - 1].depth + 1) return;
+    item.depth = newDepth; markAsDirty(); renderEditor(); focusItemById(item.id); saveData();
+  } else if (e.key === 'Enter' && !e.isComposing) {
+    e.preventDefault(); pushHistory(); const currentTab = tabs.find(t => t.id === activeTabId);
+    const caretPos = e.target.selectionStart;
+    const textAfter = item.text.substring(caretPos);
+    item.text = item.text.substring(0, caretPos);
+    const newItem = { id: generateId(), text: textAfter, note: '', depth: item.depth, completed: false, collapsed: false };
+    let insertIndex = index + 1;
+    if (item.collapsed) insertIndex = index + getSubtreeCount(currentTab, index);
+    markAsDirty(); currentTab.items.splice(insertIndex, 0, newItem);
+    renderEditor(); saveData(); setTimeout(() => focusItemById(newItem.id, 0), 0);
+  } else if (e.key === 'Backspace') {
+    const currentTab = tabs.find(t => t.id === activeTabId);
+    if (item.text === '' && currentTab.items.length > 1) {
+      e.preventDefault(); pushHistory();
+      let prevId = null;
+      for (let i = index - 1; i >= 0; i--) { if (!currentTab.items[i].completed) { prevId = currentTab.items[i].id; break; } }
+      markAsDirty(); currentTab.items.splice(index, 1); renderEditor(); if (prevId) focusItemById(prevId); saveData();
+    } else if (e.target.selectionStart === 0 && e.target.selectionEnd === 0 && index > 0) { 
+      // ★修正3: e.target.selectionEnd === 0 を追加し、文字がハイライトされていないこと（カーソル単体であること）を厳密にチェック
+      e.preventDefault(); pushHistory();
+      let prevIdx = -1;
+      for (let i = index - 1; i >= 0; i--) { if (!currentTab.items[i].completed) { prevIdx = i; break; } }
+      if (prevIdx !== -1) {
+        const prevItem = currentTab.items[prevIdx]; const prevLen = prevItem.text.length;
+        prevItem.text += item.text; currentTab.items.splice(index, 1);
+        markAsDirty(); renderEditor(); focusItemById(prevItem.id, prevLen); saveData();
+      }
+    }
+  } else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(index, -1); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(index, 1); }
+}
+
+function handleNoteKey(e, index, item) {
+  if (e.key === 'ArrowUp') { e.preventDefault(); focusItemById(item.id); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(index, 1); }
+}
+
+function moveFocus(currentIndex, direction) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const inputs = Array.from(document.querySelectorAll('.item-input'));
+  const currentInput = document.querySelector(`.item-input[data-id="${currentTab.items[currentIndex].id}"]`);
+  if (currentInput) {
+    const idx = inputs.indexOf(currentInput) + direction;
+    if (idx >= 0 && idx < inputs.length) inputs[idx].focus();
+  }
+}
+
+function getSubtreeCount(tab, index) {
+  const targetDepth = tab.items[index].depth;
+  let count = 1;
+  for (let i = index + 1; i < tab.items.length; i++) {
+    if (tab.items[i].depth > targetDepth) count++; else break;
+  }
+  return count;
+}
+
+function moveItem(index, isUp) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const items = currentTab.items; const item = items[index]; const myCount = getSubtreeCount(currentTab, index);
+  if (isUp) {
+    let prevSiblingIdx = -1;
+    for (let i = index - 1; i >= 0; i--) {
+      if (items[i].depth === item.depth) { prevSiblingIdx = i; break; }
+      if (items[i].depth < item.depth) return; 
+    }
+    if (prevSiblingIdx === -1) return;
+    pushHistory(); const mySubtree = items.splice(index, myCount);
+    items.splice(prevSiblingIdx, 0, ...mySubtree);
+    markAsDirty(); renderEditor(); focusItemById(item.id); saveData();
+  } else {
+    const nextSiblingIdx = index + myCount;
+    if (nextSiblingIdx >= items.length || items[nextSiblingIdx].depth !== item.depth) return;
+    pushHistory(); const siblingCount = getSubtreeCount(currentTab, nextSiblingIdx);
+    const mySubtree = items.splice(index, myCount);
+    items.splice(index + siblingCount, 0, ...mySubtree);
+    markAsDirty(); renderEditor(); focusItemById(item.id); saveData();
+  }
+}
+
+function completeItem(index) {
+  pushHistory();
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  const count = getSubtreeCount(currentTab, index); 
+
+  const editor = document.getElementById('editor');
+  const scrollPos = editor.scrollTop; // 現在のスクロール位置を記憶
+
+  const targetItemIds = new Set();
+  for (let i = 0; i < count; i++) targetItemIds.add(currentTab.items[index + i].id);
+
+  const rows = editor.querySelectorAll('.row');
+  let animationApplied = false;
+  rows.forEach(row => {
+    const input = row.querySelector('.item-input');
+    if (input && targetItemIds.has(input.dataset.id)) {
+      row.classList.add('row-fade-out');
+      animationApplied = true;
+    }
+  });
+
+  const delay = animationApplied ? 300 : 0;
+  setTimeout(() => {
+    for (let i = 0; i < count; i++) currentTab.items[index + i].completed = true;
+    const visibleItems = currentTab.items.filter(i => !i.completed);
+    if (visibleItems.length === 0) {
+      currentTab.items.push({ id: generateId(), text: '', note: '', depth: 0, completed: false, collapsed: false });
+    }
+    markAsDirty(); 
+    renderEditor(); 
+    editor.scrollTop = scrollPos; // 位置復元
+    saveData();
+  }, delay);
+}
+
+function countStars(text) {
+  if (!text) return 0; const match = text.match(/(★+)$/); return match ? match[1].length : 0;
+}
+
+function sortItemsByStars() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || currentTab.mode !== 'outliner') return;
+  if (currentTab.items.length <= 1) return;
+  pushHistory(); 
+  function buildTree(itemList) {
+    const root = { children: [] }; const stack = [{ depth: -1, node: root }];
+    itemList.forEach(item => {
+      const node = { item: item, children: [] };
+      while (stack.length > 0 && stack[stack.length - 1].depth >= item.depth) stack.pop();
+      stack[stack.length - 1].node.children.push(node);
+      stack.push({ depth: item.depth, node: node });
+    });
+    return root.children;
+  }
+  function sortTree(nodes) {
+    nodes.sort((a, b) => countStars(b.item.text) - countStars(a.item.text));
+    nodes.forEach(node => { if (node.children.length > 0) sortTree(node.children); });
+  }
+  function flattenTree(nodes, resultList = []) {
+    nodes.forEach(node => { resultList.push(node.item); if (node.children.length > 0) flattenTree(node.children, resultList); });
+    return resultList;
+  }
+  const tree = buildTree(currentTab.items); sortTree(tree); currentTab.items = flattenTree(tree);
+  markAsDirty(); renderEditor(); saveData();
+}
+
+function focusItemById(id, cursorPos = null) {
+  const input = document.querySelector(`.item-input[data-id="${id}"]`);
+  if (input) {
+    input.focus();
+    if (cursorPos !== null) input.setSelectionRange(cursorPos, cursorPos);
+  }
+}
+
+function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+function getTabContentText(tab) {
+  if (tab.mode === 'text') return tab.content;
+  return tab.items.filter(i => !i.completed).map(i => {
+    const indent = '  '.repeat(i.depth); const note = i.note ? `\n${indent}  (${i.note})` : '';
+    return `${indent}- ${i.text}${note}`;
+  }).join('\n');
+}
+
+function downloadFile(extension) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) return;
+  const content = getTabContentText(currentTab);
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  const filename = (currentTab.title || 'memo').replace(/[\/:*?"<>|]/g, '_') + extension;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  deleteTab(activeTabId);
+}
+
+async function copyToClipboard() {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab) return;
+  let content = `[${currentTab.title || '無題'}]\n\n${getTabContentText(currentTab)}`;
+  try {
+    await navigator.clipboard.writeText(content);
+    const btn = document.getElementById('btn-copy-clipboard'); const originalText = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = originalText, 1500);
+  } catch (err) { alert('コピーに失敗しました'); }
+}
+
+function setupEventListeners() {
+  const menuBtn = document.getElementById('new-tab-btn');
+  const menu = document.getElementById('new-tab-menu');
+  menuBtn.onclick = (e) => { e.stopPropagation(); menu.style.display = (menu.style.display === 'flex' ? 'none' : 'flex'); };
+  document.addEventListener('click', () => menu.style.display = 'none');
+  
+  // 画面のどこかでマウスを離したらドラッグフラグをオフにする
+  document.addEventListener('mouseup', () => { 
+    isDraggingSelection = false; 
+    isRowDragHandleDown = false; // アイコンドラッグのフラグも解除
+  });
+
+  document.getElementById('menu-outliner').onclick = () => createNewTab('outliner');
+  document.getElementById('menu-text').onclick = () => createNewTab('text');
+  document.getElementById('btn-undo').onclick = undo;
+  document.getElementById('btn-redo').onclick = redo;
+  document.getElementById('btn-copy-clipboard').onclick = copyToClipboard;
+  document.getElementById('btn-download-txt').onclick = () => { if (confirm('.txt形式で保存して閉じますか？')) downloadFile('.txt'); };
+  document.getElementById('btn-download-md').onclick = () => { if (confirm('.md形式で保存して閉じますか？')) downloadFile('.md'); };
+  document.getElementById('btn-force-reload').onclick = forceReload;
+  document.getElementById('btn-selection-cancel').onclick = () => { selectedItemIds.clear(); renderEditor(); };
+  document.getElementById('btn-selection-move').onclick = (e) => { e.stopPropagation(); showMultiMoveMenu(); };
+  
+  // --- 複数選択コピーボタンのイベント紐付け ---
+  const btnSelectionCopy = document.getElementById('btn-selection-copy');
+  if (btnSelectionCopy) {
+    btnSelectionCopy.onclick = (e) => { e.stopPropagation(); copySelectedItems(); };
+  }
+  
+  const btnSort = document.getElementById('btn-sort-stars');
+  if (btnSort) btnSort.onclick = sortItemsByStars;
+
+  // --- 履歴モーダル ---
+  const btnHistory = document.getElementById('btn-history');
+  if (btnHistory) btnHistory.onclick = showHistoryModal;
+  
+  const btnCloseHistory = document.getElementById('btn-close-history');
+  if (btnCloseHistory) btnCloseHistory.onclick = hideHistoryModal;
+
+  const historyModal = document.getElementById('history-modal');
+  if (historyModal) {
+    historyModal.addEventListener('click', (e) => {
+      if (e.target === historyModal) hideHistoryModal(); // 背景クリックで閉じる
+    });
+  }
+}
+
+// --- 折り畳み（トグル）機能 ---
+function toggleFold(index, forceCollapse = null) {
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (!currentTab || currentTab.mode !== 'outliner') return;
+  const item = currentTab.items[index];
+  let hasChildren = false;
+  for (let i = index + 1; i < currentTab.items.length; i++) {
+    if (currentTab.items[i].depth <= item.depth) break;
+    if (!currentTab.items[i].completed) { hasChildren = true; break; }
+  }
+  if (!hasChildren) return;
+  pushHistory();
+  item.collapsed = (forceCollapse !== null ? forceCollapse : !item.collapsed);
+  markAsDirty(); renderEditor(); saveData();
+  setTimeout(() => focusItemById(item.id), 0);
+}
+
+window.addEventListener('storage', (e) => {
+  if (![STORAGE_KEYS.tabs, STORAGE_KEYS.activeTabId].includes(e.key)) return;
+
+  const activeEl = document.activeElement;
+  const isEditing = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT');
+
+  if (e.key === STORAGE_KEYS.tabs) {
+    const newValStr = e.newValue || '[]';
+    if (newValStr === lastSavedTabsJSON || isDirty || isEditing) return;
+    if (newValStr !== JSON.stringify(tabs)) {
+      tabs = safeParse(newValStr, []);
+      lastSavedTabsJSON = newValStr;
+      renderTabs();
+      renderEditor();
+    }
+  }
+
+  if (e.key === STORAGE_KEYS.activeTabId) {
+    const newActiveId = e.newValue;
+    if (newActiveId !== activeTabId && !isEditing && !isDirty) {
+      activeTabId = newActiveId;
+      renderTabs();
+      renderEditor();
+      updateUndoButtons();
+      updateSortButtonVisibility();
+    }
+  }
+});
+
+// --- 履歴モーダル制御 ---
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  appHistory.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'history-date';
+    dateSpan.textContent = item.date;
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = item.text;
+    
+    div.appendChild(dateSpan);
+    div.appendChild(document.createTextNode(' : '));
+    div.appendChild(textSpan);
+    container.appendChild(div);
+  });
+}
+
+function showHistoryModal() {
+  const modal = document.getElementById('history-modal');
+  if (modal) {
+    renderHistory();
+    modal.style.display = 'flex';
+  }
+}
+
+function hideHistoryModal() {
+  const modal = document.getElementById('history-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
