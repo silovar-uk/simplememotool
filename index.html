@@ -1068,10 +1068,10 @@
     }
 
     .row {
-      gap: 10px;
-      min-height: 38px;
-      padding: 6px 10px 6px 0;
-      border-radius: 16px;
+      gap: 8px;
+      min-height: 30px;
+      padding: 2px 8px 2px 0;
+      border-radius: 12px;
       transition: background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
     }
 
@@ -1086,9 +1086,9 @@
     }
 
     .fold-btn {
-      width: 26px;
-      height: 26px;
-      margin-top: 4px;
+      width: 24px;
+      height: 24px;
+      margin-top: 2px;
       border-radius: 999px;
       color: var(--muted);
       background: rgba(255,255,255,0.84);
@@ -1104,9 +1104,9 @@
     .item-note,
     .text-editor {
       border: 0;
-      border-radius: 14px;
+      border-radius: 12px;
       background: transparent;
-      padding: 8px 10px;
+      padding: 5px 8px;
       color: var(--text);
       outline: none;
       transition: background 0.16s ease, box-shadow 0.16s ease;
@@ -1120,7 +1120,7 @@
     }
 
     .item-note {
-      margin-top: 4px;
+      margin-top: 2px;
       font-size: 13px;
       color: var(--muted);
       background: rgba(60,60,67,0.04);
@@ -1221,6 +1221,193 @@
         min-width: 132px;
         max-width: 180px;
       }
+    }
+
+
+    /* --- Simplified visual override --- */
+    .app-header {
+      padding-bottom: 8px;
+    }
+
+    .brand-badge {
+      border-radius: 10px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+    }
+
+    .toolbar,
+    .tabbar,
+    .workspace,
+    .workspace-topbar {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .toolbar,
+    .tabbar,
+    .workspace {
+      box-shadow: none;
+    }
+
+    .toolbar {
+      gap: 6px;
+    }
+
+    .toolbar-btn,
+    .inline-btn,
+    .tab-scroll,
+    .new-tab-btn {
+      border-radius: 8px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+    }
+
+    .toolbar-btn:hover,
+    .inline-btn:hover,
+    .tab-scroll:hover,
+    .new-tab-btn:hover {
+      background: rgba(255,255,255,0.92);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.12);
+      transform: none;
+    }
+
+    .toolbar-btn.primary {
+      background: rgba(0,122,255,0.10);
+      color: #0066d6;
+      box-shadow: inset 0 0 0 1px rgba(0,122,255,0.16);
+    }
+
+    .toolbar-btn.primary:hover {
+      background: rgba(0,122,255,0.14);
+      box-shadow: inset 0 0 0 1px rgba(0,122,255,0.18);
+    }
+
+    .tabbar {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.46);
+      border: 1px solid rgba(60,60,67,0.08);
+    }
+
+    .tab {
+      min-height: 34px;
+      border-radius: 8px;
+      background: transparent;
+      box-shadow: none;
+      border: 1px solid transparent;
+    }
+
+    .tab:hover {
+      background: rgba(255,255,255,0.52);
+      box-shadow: none;
+    }
+
+    .tab.active {
+      background: rgba(255,255,255,0.92);
+      border-color: rgba(60,60,67,0.10);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .tab.is-renaming {
+      box-shadow: inset 0 0 0 1px rgba(0,122,255,0.18);
+    }
+
+    .tab-close {
+      border-radius: 6px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .tab-close:hover {
+      background: rgba(255,59,48,0.10);
+    }
+
+    .tab-rename-input {
+      border-radius: 6px;
+      background: rgba(255,255,255,0.96);
+      box-shadow: inset 0 0 0 1px rgba(0,122,255,0.18);
+    }
+
+    .workspace {
+      border-radius: 12px;
+      background: rgba(255,255,255,0.60);
+      border: 1px solid rgba(60,60,67,0.08);
+    }
+
+    .workspace-topbar {
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(60,60,67,0.06);
+    }
+
+    .mode-chip,
+    .hint-pill {
+      border-radius: 7px;
+      background: rgba(255,255,255,0.68);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+    }
+
+    .editor {
+      background: transparent;
+    }
+
+    .row {
+      border-radius: 6px;
+      box-shadow: none;
+    }
+
+    .row:hover,
+    .row.is-focused {
+      background: rgba(255,255,255,0.44);
+      box-shadow: none;
+    }
+
+    .fold-btn,
+    .row-action {
+      border-radius: 6px;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .fold-btn:hover,
+    .row-action:hover {
+      background: rgba(60,60,67,0.08);
+      box-shadow: none;
+    }
+
+    .item-input,
+    .item-note,
+    .text-editor {
+      border-radius: 6px;
+      padding: 3px 4px;
+    }
+
+    .item-note {
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .item-input:focus,
+    .item-note:focus,
+    .text-editor:focus {
+      background: rgba(255,255,255,0.88);
+      box-shadow: inset 0 0 0 1px rgba(0,122,255,0.16);
+    }
+
+    .footer-hints {
+      background: transparent;
+      border-top: 1px solid rgba(60,60,67,0.06);
+    }
+
+    .empty-state {
+      border-radius: 12px;
+      background: rgba(255,255,255,0.72);
+      box-shadow: inset 0 0 0 1px rgba(60,60,67,0.08);
+    }
+
+    .toast {
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(17,17,17,0.16);
     }
 
   </style>
@@ -2093,10 +2280,14 @@
       const removedItems = deepClone(tab.items.slice(index, index + count));
       const visibleIds = getVisibleItemIdList(tab);
       const currentVisibleIndex = visibleIds.indexOf(itemId);
-      const focusItemId = visibleIds[currentVisibleIndex + 1] || visibleIds[currentVisibleIndex - 1] || null;
+      const previousVisibleId = visibleIds[currentVisibleIndex - 1] || null;
+      const nextVisibleId = visibleIds[currentVisibleIndex + 1] || null;
+      const focusAfterRedo = previousVisibleId
+        ? { type: "item", itemId: previousVisibleId, cursor: Number(tab.items[index - 1]?.text?.length || 0) }
+        : (nextVisibleId ? { type: "item", itemId: nextVisibleId, cursor: 0 } : null);
       return {
         label: "removeItem",
-        focusAfterRedo: focusItemId ? { type: "item", itemId: focusItemId } : null,
+        focusAfterRedo,
         focusAfterUndo: { type: "item", itemId },
         do(targetState) {
           const targetTab = targetState.tabs.find((entry) => entry.id === tabId);
