@@ -314,6 +314,250 @@
     .workspace {
       flex: 1;
       min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(290px, 33%) minmax(0, 1fr);
+      background: var(--bg);
+    }
+
+    .sidebar {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(180deg, #f7f2eb 0%, #f5f3ef 100%);
+      overflow: auto;
+    }
+
+    .sidebar-card {
+      border: 1px solid #e8dfd2;
+      background: rgba(255,255,255,0.8);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    }
+
+    .sidebar-card.search-card {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .sidebar-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-card-head.compact {
+      margin-bottom: 2px;
+    }
+
+    .sidebar-head-actions {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .sidebar-subtitle {
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .ghost-btn {
+      height: 28px;
+      border: 1px solid #ddd3c4;
+      background: rgba(255,255,255,0.82);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0 10px;
+      transition: 0.18s ease;
+    }
+
+    .ghost-btn:hover {
+      color: var(--text);
+      background: #fff;
+      border-color: #cdbfa9;
+    }
+
+    .scratch-card {
+      background: linear-gradient(180deg, #fff8ef 0%, #fffdf7 100%);
+    }
+
+    .scratch-board {
+      position: relative;
+      border-radius: 18px;
+      padding: 14px 14px 18px;
+      background: linear-gradient(180deg, #fdeec7 0%, #fff6dd 100%);
+      border: 1px solid #e8d7ab;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -2px 8px rgba(201, 169, 88, 0.08);
+    }
+
+    .scratch-knobs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .scratch-knobs span {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: inset 0 -1px 1px rgba(0,0,0,0.05);
+    }
+
+    .scratch-knobs span:nth-child(1) { background: #f87171; }
+    .scratch-knobs span:nth-child(2) { background: #60a5fa; }
+    .scratch-knobs span:nth-child(3) { background: #34d399; }
+
+    .scratchpad-input {
+      width: 100%;
+      min-height: 190px;
+      resize: vertical;
+      border: none;
+      outline: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.14) 0,
+        rgba(255,255,255,0.14) 29px,
+        rgba(194, 166, 100, 0.17) 29px,
+        rgba(194, 166, 100, 0.17) 30px
+      );
+      color: #5b4b22;
+      line-height: 1.8;
+      padding: 2px 4px 10px;
+    }
+
+    .scratch-rail {
+      height: 10px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #d7ecf9 0%, #b7d8ee 100%);
+      border: 1px solid #9fc7df;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 0 10px;
+      min-height: 38px;
+    }
+
+    .search-icon {
+      color: var(--muted);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      min-width: 0;
+      color: var(--text);
+    }
+
+    .sidebar-section {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    .sidebar-list {
+      min-height: 52px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidebar-empty {
+      padding: 10px 0 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sidebar-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid #ebe7e1;
+      background: rgba(255,255,255,0.82);
+      border-radius: 10px;
+      padding: 9px 10px;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-item:hover {
+      border-color: #d6cec3;
+      background: #fff;
+    }
+
+    .sidebar-item-title {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .sidebar-item-meta,
+    .sidebar-item-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .sidebar-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .sidebar-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #fff5dd;
+      border: 1px solid #eed8a2;
+      color: #8a6420;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .workspace-main {
+      min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       background: var(--surface);
@@ -444,6 +688,18 @@
 
     .row.is-focused {
       background: rgba(224, 242, 254, 0.45);
+    }
+
+    .row.is-red-bold .item-input,
+    .row.is-red-bold .item-note {
+      color: #c62828;
+      font-weight: 700;
+    }
+
+    .row.is-red-bold .item-input::placeholder,
+    .row.is-red-bold .item-note::placeholder {
+      color: rgba(198, 40, 40, 0.58);
+      font-weight: 700;
     }
 
     .row-indent-guide {
@@ -617,6 +873,25 @@
       box-shadow: inset 0 -1px 0 rgba(0,0,0,0.04);
     }
 
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: minmax(250px, 36%) minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 880px) {
+      .workspace {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: 46vh;
+      }
+    }
 
     .modal-backdrop {
       position: fixed;
@@ -1448,27 +1723,65 @@
   </div>
 
   <main class="workspace">
-    <div class="workspace-topbar">
-      <div class="workspace-meta">
-        <div id="mode-chip" class="mode-chip">🔹 OUTLINER</div>
-        <div id="workspace-title" class="workspace-title">読み込み中...</div>
-      </div>
-      <div class="workspace-actions">
-        <button id="btn-rename-tab" class="inline-btn">✏️ タブ名変更</button>
-        <button id="btn-duplicate-tab" class="inline-btn">⧉ タブ複製</button>
-        <button id="btn-delete-tab" class="inline-btn" data-role="danger">🗑️ タブ削除</button>
-      </div>
-    </div>
+    <aside class="sidebar" aria-label="補助パネル">
+      <section class="sidebar-card scratch-card">
+        <div class="sidebar-card-head">
+          <div>
+            <div class="sidebar-title">一時メモ</div>
+            <div class="sidebar-subtitle">とりあえず置いておく場所</div>
+          </div>
+          <div class="sidebar-head-actions">
+            <button id="btn-scratch-copy" class="ghost-btn" type="button">Copy</button>
+            <button id="btn-scratch-clear" class="ghost-btn" type="button">消す</button>
+          </div>
+        </div>
+        <div class="scratch-board">
+          <div class="scratch-knobs" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <textarea id="scratchpad-input" class="scratchpad-input" spellcheck="false" placeholder="思いついたことを雑に置いてOK。
+あとで右へ整理して持っていく用のスペース。"></textarea>
+          <div class="scratch-rail" aria-hidden="true"></div>
+        </div>
+      </section>
+      <section class="sidebar-card bold-card">
+        <div class="sidebar-card-head compact">
+          <div>
+            <div class="sidebar-title">右の太字だけ</div>
+            <div class="sidebar-subtitle">Ctrl/Cmd + B で付けた赤太字を一覧表示</div>
+          </div>
+        </div>
 
-    <div id="editor" class="editor" aria-live="polite"></div>
+        <div class="sidebar-section">
+          <div id="bold-results" class="sidebar-list"></div>
+        </div>
+      </section>
+    </aside>
 
-    <div class="footer-hints">
-      <span class="hint-chip"><kbd>Enter</kbd> 新規行</span>
-      <span class="hint-chip"><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> 階層変更</span>
-      <span class="hint-chip"><kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> 完了</span>
-      <span class="hint-chip"><kbd>F2</kbd> ノート表示</span>
-      <span class="hint-chip"><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>↑↓</kbd> 行移動</span>
-    </div>
+    <section class="workspace-main">
+      <div class="workspace-topbar">
+        <div class="workspace-meta">
+          <div id="mode-chip" class="mode-chip">🔹 OUTLINER</div>
+          <div id="workspace-title" class="workspace-title">読み込み中...</div>
+        </div>
+        <div class="workspace-actions">
+          <button id="btn-rename-tab" class="inline-btn">✏️ タブ名変更</button>
+          <button id="btn-duplicate-tab" class="inline-btn">⧉ タブ複製</button>
+          <button id="btn-delete-tab" class="inline-btn" data-role="danger">🗑️ タブ削除</button>
+        </div>
+      </div>
+
+      <div id="editor" class="editor" aria-live="polite"></div>
+
+      <div class="footer-hints">
+        <span class="hint-chip"><kbd>Enter</kbd> 新規行</span>
+        <span class="hint-chip"><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> 階層変更</span>
+        <span class="hint-chip"><kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> 完了</span>
+        <span class="hint-chip"><kbd>Ctrl/Cmd</kbd>+<kbd>B</kbd> 太字</span>
+        <span class="hint-chip"><kbd>F2</kbd> ノート表示</span>
+        <span class="hint-chip"><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>↑↓</kbd> 行移動</span>
+      </div>
+    </section>
   </main>
 
   
@@ -1529,6 +1842,7 @@
         depth: Number.isFinite(item && item.depth) ? Math.max(0, item.depth) : 0,
         completed: !!(item && item.completed),
         collapsed: !!(item && item.collapsed),
+        isRedBold: !!(item && item.isRedBold),
         updatedAt: Number.isFinite(item && item.updatedAt) ? item.updatedAt : now()
       });
 
@@ -1556,7 +1870,9 @@
           const tabs = parsed.tabs.map(sanitizeTab);
           const activeTabId = tabs.find((tab) => tab.id === parsed.activeTabId)?.id || tabs[0]?.id || null;
           const showCompleted = !!(parsed && parsed.ui && parsed.ui.showCompleted);
-          return { tabs, activeTabId, ui: { showCompleted } };
+          const scratchpad = safeText(parsed && parsed.ui && parsed.ui.scratchpad);
+          const filterQuery = safeText(parsed && parsed.ui && parsed.ui.filterQuery);
+          return { tabs, activeTabId, ui: { showCompleted, scratchpad, filterQuery } };
         } catch (error) {
           console.error("load failed", error);
           return null;
@@ -1569,7 +1885,9 @@
             tabs: data.tabs,
             activeTabId: data.activeTabId,
             ui: {
-              showCompleted: !!(data.ui && data.ui.showCompleted)
+              showCompleted: !!(data.ui && data.ui.showCompleted),
+              scratchpad: safeText(data.ui && data.ui.scratchpad),
+              filterQuery: safeText(data.ui && data.ui.filterQuery)
             }
           }));
           return true;
@@ -1589,6 +1907,7 @@
       depth: 0,
       completed: false,
       collapsed: false,
+      isRedBold: false,
       updatedAt: now()
     });
 
@@ -1609,7 +1928,11 @@
 
     const state = {
       tabs: [],
-      activeTabId: null
+      activeTabId: null,
+      ui: {
+        scratchpad: "",
+        filterQuery: ""
+      }
     };
 
     const runtime = {
@@ -1644,6 +1967,13 @@
       btnRenameTab: $("#btn-rename-tab"),
       btnDuplicateTab: $("#btn-duplicate-tab"),
       btnDeleteTab: $("#btn-delete-tab"),
+      scratchpadInput: $("#scratchpad-input"),
+      btnScratchCopy: $("#btn-scratch-copy"),
+      btnScratchClear: $("#btn-scratch-clear"),
+      filterQuery: $("#filter-query"),
+      sidebarMeta: $("#sidebar-meta"),
+      searchResults: $("#search-results"),
+      boldResults: $("#bold-results"),
       importModal: $("#import-modal"),
       importTextarea: $("#import-textarea"),
       btnImportClose: $("#btn-import-close"),
@@ -1735,6 +2065,8 @@
           ? loaded.activeTabId
           : loaded.tabs[0].id;
         runtime.showCompleted = !!(loaded.ui && loaded.ui.showCompleted);
+        state.ui.scratchpad = safeText(loaded.ui && loaded.ui.scratchpad);
+        state.ui.filterQuery = safeText(loaded.ui && loaded.ui.filterQuery);
       }
       if (!Array.isArray(state.tabs) || !state.tabs.length) {
         const firstTab = createTab("outliner");
@@ -1909,7 +2241,9 @@
         exportedAt: new Date().toISOString(),
         activeTabId: state.activeTabId,
         ui: {
-          showCompleted: !!runtime.showCompleted
+          showCompleted: !!runtime.showCompleted,
+          scratchpad: safeText(state.ui && state.ui.scratchpad),
+          filterQuery: safeText(state.ui && state.ui.filterQuery)
         },
         tabs: deepClone(state.tabs)
       };
@@ -1949,7 +2283,13 @@
       const tabs = normalizeImportedTabs(parsed.tabs, { forceNewIds: false });
       const importedActiveId = parsed.activeTabId;
       const activeTabId = tabs.find((tab) => tab.id === importedActiveId)?.id || tabs[0]?.id || null;
-      const ui = parsed.ui && typeof parsed.ui === "object" ? { showCompleted: !!parsed.ui.showCompleted } : null;
+      const ui = parsed.ui && typeof parsed.ui === "object"
+        ? {
+            showCompleted: !!parsed.ui.showCompleted,
+            scratchpad: safeText(parsed.ui.scratchpad),
+            filterQuery: safeText(parsed.ui.filterQuery)
+          }
+        : null;
       return { tabs, activeTabId, ui };
     };
 
@@ -2011,7 +2351,11 @@
       }
       state.tabs = payload.tabs;
       state.activeTabId = payload.activeTabId || payload.tabs[0].id;
-      if (payload.ui) runtime.showCompleted = !!payload.ui.showCompleted;
+      if (payload.ui) {
+        runtime.showCompleted = !!payload.ui.showCompleted;
+        state.ui.scratchpad = safeText(payload.ui.scratchpad);
+        state.ui.filterQuery = safeText(payload.ui.filterQuery);
+      }
       runtime.renamingTabId = null;
       runtime.focused = { type: "tab", tabId: state.activeTabId };
       runtime.openNotes.clear();
@@ -2572,7 +2916,7 @@
         const row = document.createElement("div");
         const childrenCount = index + 1 < tab.items.length && tab.items[index + 1].depth > item.depth;
         const isNoteOpen = runtime.openNotes.has(item.id) || Boolean(item.note);
-        row.className = `row ${item.completed ? "completed" : ""} ${runtime.focused?.itemId === item.id ? "is-focused" : ""}`;
+        row.className = `row ${item.completed ? "completed" : ""} ${item.isRedBold ? "is-red-bold" : ""} ${runtime.focused?.itemId === item.id ? "is-focused" : ""}`;
         row.dataset.itemId = item.id;
         row.dataset.depth = String(item.depth);
         row.style.paddingLeft = `${item.depth * 20}px`;
@@ -2618,20 +2962,208 @@
     const render = (focusTarget = runtime.focused) => {
       renderTabs();
       setWorkspaceMeta();
+      updateToolbarState();
       const tab = getActiveTab();
       if (!tab) {
         el.editor.innerHTML = '<div class="empty-state"><strong>タブがありません</strong>新しいタブを作って始めてな。</div>';
+        renderSidebar();
         return;
       }
       if (tab.mode === "text") renderTextEditor(tab);
       else renderOutliner(tab);
 
+      renderSidebar();
       History.updateButtons();
       applyFocus(focusTarget);
     };
 
     const setFocusedItem = (itemId, type = "item") => {
       runtime.focused = itemId ? { type, itemId } : null;
+    };
+
+    const decodeBasicHtml = (value) => safeText(value)
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&amp;/gi, "&");
+
+    const stripBoldMarkup = (value) => decodeBasicHtml(value)
+      .replace(/<\/?(strong|b)>/gi, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1");
+
+    const stripLegacyBoldMarkers = (value) => safeText(value)
+      .replace(/<\/?(strong|b)>/gi, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1");
+
+    const extractBoldBits = (value) => {
+      const source = safeText(value);
+      const bits = [];
+      const regex = /\*\*(.+?)\*\*|<(?:strong|b)>(.+?)<\/(?:strong|b)>/gi;
+      let match;
+      while ((match = regex.exec(source)) !== null) {
+        const bit = stripBoldMarkup(match[1] || match[2] || "").trim();
+        if (bit) bits.push(bit);
+      }
+      return bits;
+    };
+
+    const buildSearchEntries = (tab) => {
+      if (!tab) return [];
+      if (tab.mode === "text") {
+        let cursor = 0;
+        return safeText(tab.content).split(/\r?\n/).map((line, index) => {
+          const start = cursor;
+          cursor += line.length + 1;
+          return {
+            id: `text-${index}`,
+            title: stripBoldMarkup(line).trim(),
+            sub: `行 ${index + 1}`,
+            haystack: stripBoldMarkup(line).toLowerCase(),
+            focus: { type: "text", cursor: start },
+            raw: line
+          };
+        }).filter((entry) => entry.title);
+      }
+      return tab.items.map((item) => {
+        const title = stripBoldMarkup(item.text).trim() || "（無題）";
+        const note = stripBoldMarkup(item.note).trim();
+        const noteMatched = !!note;
+        return {
+          id: item.id,
+          title,
+          sub: note,
+          haystack: `${title}
+${note}`.toLowerCase(),
+          focus: noteMatched ? { type: "note", itemId: item.id } : { type: "item", itemId: item.id },
+          completed: !!item.completed,
+          raw: `${item.text}
+${item.note}`
+        };
+      });
+    };
+
+    const buildBoldEntries = (tab) => {
+      if (!tab) return [];
+      if (tab.mode === "text") {
+        let cursor = 0;
+        return safeText(tab.content).split(/\r?\n/).flatMap((line, index) => {
+          const bits = extractBoldBits(line);
+          const start = cursor;
+          cursor += line.length + 1;
+          if (!bits.length) return [];
+          return [{
+            id: `bold-text-${index}`,
+            tags: bits,
+            title: stripBoldMarkup(line).trim() || `行 ${index + 1}`,
+            sub: `行 ${index + 1}`,
+            haystack: `${bits.join(" ")} ${stripBoldMarkup(line)}`.toLowerCase(),
+            focus: { type: "text", cursor: start }
+          }];
+        });
+      }
+      return tab.items.flatMap((item) => {
+        const textBits = extractBoldBits(item.text);
+        const noteBits = extractBoldBits(item.note);
+        const entries = [];
+        if (item.isRedBold) {
+          entries.push({
+            id: `bold-item-${item.id}`,
+            tags: ["赤太字"],
+            title: stripLegacyBoldMarkers(item.text).trim() || "（無題）",
+            sub: item.note ? "本文・ノート" : "本文",
+            haystack: `${stripLegacyBoldMarkers(item.text)} ${stripLegacyBoldMarkers(item.note)}`.toLowerCase(),
+            focus: { type: "item", itemId: item.id }
+          });
+          return entries;
+        }
+        if (textBits.length) {
+          entries.push({
+            id: `bold-item-${item.id}`,
+            tags: textBits,
+            title: stripBoldMarkup(item.text).trim() || "（無題）",
+            sub: "本文",
+            haystack: `${textBits.join(" ")} ${stripBoldMarkup(item.text)}`.toLowerCase(),
+            focus: { type: "item", itemId: item.id }
+          });
+        }
+        if (noteBits.length) {
+          entries.push({
+            id: `bold-note-${item.id}`,
+            tags: noteBits,
+            title: stripBoldMarkup(item.note).trim() || stripBoldMarkup(item.text).trim() || "補足メモ",
+            sub: "ノート",
+            haystack: `${noteBits.join(" ")} ${stripBoldMarkup(item.note)} ${stripBoldMarkup(item.text)}`.toLowerCase(),
+            focus: { type: "note", itemId: item.id }
+          });
+        }
+        return entries;
+      });
+    };
+
+    const renderSidebarList = (container, entries, emptyText, options = {}) => {
+      if (!container) return;
+      container.innerHTML = "";
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "sidebar-empty";
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+      }
+      entries.slice(0, options.limit || 12).forEach((entry) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sidebar-item";
+        btn.datasetFocus = JSON.stringify(entry.focus);
+
+        if (entry.tags && entry.tags.length) {
+          const tags = document.createElement("div");
+          tags.className = "sidebar-tags";
+          entry.tags.forEach((tagText) => {
+            const tag = document.createElement("span");
+            tag.className = "sidebar-tag";
+            tag.textContent = tagText;
+            tags.appendChild(tag);
+          });
+          btn.appendChild(tags);
+        }
+
+        const title = document.createElement("div");
+        title.className = "sidebar-item-title";
+        title.textContent = entry.title;
+        btn.appendChild(title);
+
+        if (entry.sub) {
+          const sub = document.createElement("div");
+          sub.className = entry.tags ? "sidebar-item-meta" : "sidebar-item-sub";
+          sub.textContent = entry.sub;
+          btn.appendChild(sub);
+        }
+
+        btn.addEventListener("click", () => {
+          const focus = entry.focus || null;
+          if (!focus) return;
+          if (focus.type === "note") runtime.openNotes.add(focus.itemId);
+          runtime.focused = focus;
+          render(focus);
+        });
+
+        container.appendChild(btn);
+      });
+    };
+
+    const renderSidebar = () => {
+      if (el.scratchpadInput && document.activeElement !== el.scratchpadInput && el.scratchpadInput.value !== safeText(state.ui.scratchpad)) {
+        el.scratchpadInput.value = safeText(state.ui.scratchpad);
+      }
+
+      const tab = getActiveTab();
+      const allBoldEntries = buildBoldEntries(tab);
+      renderSidebarList(
+        el.boldResults,
+        allBoldEntries,
+        allBoldEntries.length ? "太字のメモを選ぶと右へ飛べます。" : "右側で Ctrl/Cmd + B を使うとここにまとまります。"
+      );
     };
 
     const startTabRename = (tabId) => {
@@ -2679,6 +3211,8 @@
       state.tabs = loaded.tabs;
       state.activeTabId = loaded.activeTabId;
       runtime.showCompleted = !!(loaded.ui && loaded.ui.showCompleted);
+      state.ui.scratchpad = safeText(loaded.ui && loaded.ui.scratchpad);
+      state.ui.filterQuery = safeText(loaded.ui && loaded.ui.filterQuery);
       runtime.editSessions.clear();
       runtime.openNotes.clear();
       History.reset();
@@ -2809,6 +3343,7 @@
           after: nextValue
         });
         scheduleSave();
+        renderSidebar();
         return;
       }
 
@@ -2829,6 +3364,7 @@
           after: nextValue
         });
         scheduleSave();
+        renderSidebar();
         return;
       }
 
@@ -2845,6 +3381,7 @@
           after: nextValue
         });
         scheduleSave();
+        renderSidebar();
       }
     };
 
@@ -2883,6 +3420,49 @@
       return true;
     };
 
+
+    const createToggleItemRedBoldCommand = (tabId, itemId, focusType = "item") => {
+      const tab = state.tabs.find((entry) => entry.id === tabId);
+      const item = tab ? getItem(tab, itemId) : null;
+      if (!item) return null;
+      const before = {
+        isRedBold: !!item.isRedBold,
+        text: item.text,
+        note: item.note,
+        updatedAt: item.updatedAt
+      };
+      const after = {
+        isRedBold: !before.isRedBold,
+        text: stripLegacyBoldMarkers(item.text),
+        note: stripLegacyBoldMarkers(item.note),
+        updatedAt: now()
+      };
+      const focus = { type: focusType === "note" ? "note" : "item", itemId };
+      return {
+        label: "toggleItemRedBold",
+        focusAfterRedo: focus,
+        focusAfterUndo: focus,
+        do(targetState) {
+          const targetTab = targetState.tabs.find((entry) => entry.id === tabId);
+          const target = targetTab ? getItem(targetTab, itemId) : null;
+          if (!target) return;
+          target.isRedBold = after.isRedBold;
+          target.text = after.text;
+          target.note = after.note;
+          target.updatedAt = after.updatedAt;
+        },
+        undo(targetState) {
+          const targetTab = targetState.tabs.find((entry) => entry.id === tabId);
+          const target = targetTab ? getItem(targetTab, itemId) : null;
+          if (!target) return;
+          target.isRedBold = before.isRedBold;
+          target.text = before.text;
+          target.note = before.note;
+          target.updatedAt = before.updatedAt;
+        }
+      };
+    };
+
     const handleOutlinerKeydown = (event) => {
       const tab = getActiveTab();
       if (!tab || tab.mode !== "outliner") return;
@@ -2891,6 +3471,13 @@
 
       if (note) {
         const itemId = note.dataset.itemId;
+        if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "b") {
+          event.preventDefault();
+          finalizeEditSession({ type: "item", tabId: tab.id, itemId, field: "note" });
+          const command = createToggleItemRedBoldCommand(tab.id, itemId, "note");
+          if (command) History.run(command);
+          return;
+        }
         if (event.key === "F2") {
           event.preventDefault();
           runtime.openNotes.delete(itemId);
@@ -2908,6 +3495,14 @@
 
       const selectionStart = input.selectionStart;
       const selectionEnd = input.selectionEnd;
+
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        finalizeEditSession({ type: "item", tabId: tab.id, itemId, field: "text" });
+        const command = createToggleItemRedBoldCommand(tab.id, itemId, "item");
+        if (command) History.run(command);
+        return;
+      }
 
       if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -2992,6 +3587,12 @@
       if (!event.target.closest(".text-editor")) return;
       const tab = getActiveTab();
       if (!tab || tab.mode !== "text") return;
+
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        showToast("赤太字はアウトライナー行で使ってな");
+        return;
+      }
 
       if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -3178,6 +3779,25 @@
         if (event.key === "Escape" && el.importModal && !el.importModal.classList.contains("hidden")) {
           closeImportModal();
         }
+      });
+
+      el.scratchpadInput?.addEventListener("input", () => {
+        state.ui.scratchpad = el.scratchpadInput.value;
+        scheduleSave();
+      });
+
+      el.btnScratchClear?.addEventListener("click", () => {
+        state.ui.scratchpad = "";
+        if (el.scratchpadInput) {
+          el.scratchpadInput.value = "";
+          el.scratchpadInput.focus();
+        }
+        scheduleSave();
+        showToast("一時メモを消したで");
+      });
+
+      el.btnScratchCopy?.addEventListener("click", async () => {
+        await writeClipboardText(safeText(state.ui.scratchpad), "一時メモをコピーしたで");
       });
 
       window.addEventListener("beforeunload", () => Storage.save(state));
